@@ -12,7 +12,7 @@ if (!API_KEY || API_KEY === "null") {
 let life = JSON.parse(localStorage.getItem("life")) || {
   summary: "",
   events: [],
-  current: "Your nth life is about to begin. What kind of life do you want to live?"
+  current: "Your n<sup>th</sup> life is about to begin. What kind of life do you want to live?"
 };
 
 // Start the game with the typewriter effect for the intro

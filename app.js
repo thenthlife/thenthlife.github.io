@@ -1,33 +1,60 @@
-// 1. Try to get the key from your browser's memory
+// 1. API Key Setup
 let API_KEY = localStorage.getItem("my_gemini_key");
 
-// 2. If the key isn't there, ask for it
 if (!API_KEY || API_KEY === "null") {
     API_KEY = prompt("Please enter your Gemini API Key:");
-    
-    // 3. If you entered a key, save it so you don't have to enter it again
     if (API_KEY) {
         localStorage.setItem("my_gemini_key", API_KEY);
     }
 }
 
+// 2. Life Data Initialization
 let life = JSON.parse(localStorage.getItem("life")) || {
   summary: "",
   events: [],
   current: "Your nth life is about to begin. What kind of life do you want to live?"
 };
 
-renderMessage("ai", life.current);
+// Start the game with the typewriter effect for the intro
+window.onload = () => {
+    renderMessage("ai", life.current);
+};
 
-function renderMessage(role, text) {
-  const chat = document.getElementById("chat");
-  const div = document.createElement("div");
-  div.className = role;
-  div.innerText = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+// 3. Typewriter Core Logic
+function typeText(element, text, speed = 20, callback) {
+  let i = 0;
+  element.innerHTML = ""; 
+  const timer = setInterval(() => {
+    if (i < text.length) {
+      element.innerHTML += text.charAt(i);
+      i++;
+      const chat = document.getElementById("chat");
+      chat.scrollTop = chat.scrollHeight; 
+    } else {
+      clearInterval(timer);
+      if (callback) callback(); // Trigger buttons/next steps here
+    }
+  }, speed);
 }
 
+// 4. Enhanced Message Renderer
+function renderMessage(role, text, callback) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  // Ensure class names match your CSS (ai-message / user-message)
+  div.className = `message ${role === 'ai' ? 'ai-message' : 'user-message'}`;
+  chat.appendChild(div);
+
+  if (role === "ai") {
+    typeText(div, text, 20, callback);
+  } else {
+    div.innerText = text;
+    if (callback) callback();
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+
+// 5. Reset Life
 function resetLife() {
   if (confirm("Are you sure you want to end this life and start over?")) {
     localStorage.removeItem("life");
@@ -35,6 +62,7 @@ function resetLife() {
   }
 }
 
+// 6. Send Message Logic
 async function sendMessage(manualText) {
   const input = document.getElementById("userInput");
   const loading = document.getElementById("loading");
@@ -43,10 +71,14 @@ async function sendMessage(manualText) {
   if (!userText) return;
 
   if (!manualText) input.value = "";
+  
+  // Remove any existing choice buttons when a new message is sent
+  const oldChoices = document.querySelector(".choices-container");
+  if (oldChoices) oldChoices.remove();
+
   renderMessage("user", userText);
   loading.classList.remove("hidden");
 
-  // Improved Prompt for better story flow and 4 choices
   const prompt = `
     You are a life simulator. 
     Current Life Info: ${life.summary}
@@ -74,32 +106,38 @@ async function sendMessage(manualText) {
     const data = await response.json();
     loading.classList.add("hidden");
 
+    if (data.error) {
+        renderMessage("ai", "API Error: " + data.error.message);
+        return;
+    }
+
     const text = data.candidates[0].content.parts[0].text;
     
-    // Parsing the new format
+    // Parsing
     const scene = text.split("EVENT:")[0].replace("SCENE:", "").trim();
     const eventPart = text.split("EVENT:")[1]?.split("CHOICES:")[0].trim();
     const choicesPart = text.split("CHOICES:")[1]?.trim();
 
-    // Update Life Data
+    // Update Storage
     if (eventPart && eventPart.toLowerCase() !== "none") life.events.push(eventPart);
     life.current = scene;
     localStorage.setItem("life", JSON.stringify(life));
 
-    // Show the full scene in chat
-    renderMessage("ai", scene);
-
-    // Show choices as buttons
-    if (choicesPart) {
-      renderChoices(choicesPart.split("|"));
-    }
+    // Render Scene then render Choices
+    renderMessage("ai", scene, () => {
+      if (choicesPart) {
+        renderChoices(choicesPart.split("|"));
+      }
+    });
 
   } catch (err) {
     loading.classList.add("hidden");
-    renderMessage("ai", "Connection error. Try again.");
+    renderMessage("ai", "Connection error. Check your key or internet.");
+    console.error(err);
   }
 }
 
+// 7. Choice Button Logic
 function renderChoices(choices) {
   const chat = document.getElementById("chat");
   const div = document.createElement("div");
@@ -110,7 +148,7 @@ function renderChoices(choices) {
     btn.className = "choice-btn";
     btn.innerText = choice.trim();
     btn.onclick = () => {
-      div.remove(); // Remove choices after clicking
+      div.remove(); 
       sendMessage(btn.innerText);
     };
     div.appendChild(btn);

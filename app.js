@@ -1,4 +1,15 @@
-const API_KEY = "Please enter your Gemini API Key to start:";
+// 1. Try to get the key from your browser's memory
+let API_KEY = localStorage.getItem("my_gemini_key");
+
+// 2. If the key isn't there, ask for it
+if (!API_KEY || API_KEY === "null") {
+    API_KEY = prompt("Please enter your Gemini API Key:");
+    
+    // 3. If you entered a key, save it so you don't have to enter it again
+    if (API_KEY) {
+        localStorage.setItem("my_gemini_key", API_KEY);
+    }
+}
 
 let life = JSON.parse(localStorage.getItem("life")) || {
   summary: "",

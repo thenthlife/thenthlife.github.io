@@ -35,55 +35,87 @@ function resetLife() {
   }
 }
 
-async function sendMessage() {
+async function sendMessage(manualText) {
   const input = document.getElementById("userInput");
   const loading = document.getElementById("loading");
-  const userText = input.value.trim();
-
+  const userText = manualText || input.value.trim();
+  
   if (!userText) return;
 
-  input.value = "";
+  if (!manualText) input.value = "";
   renderMessage("user", userText);
-  loading.classList.remove("hidden"); // Show loading
+  loading.classList.remove("hidden");
 
-  const prompt = `You are a persistent life simulator.
-    Summary: ${life.summary}
-    Events: ${life.events.join("\n")}
-    Current: ${life.current}
-    User: ${userText}
-    Respond with SCENE: and EVENT: sections.`;
+  // Improved Prompt for better story flow and 4 choices
+  const prompt = `
+    You are a life simulator. 
+    Current Life Info: ${life.summary}
+    Past Events: ${life.events.join(", ")}
+    Current Situation: ${life.current}
+
+    The user does: ${userText}
+
+    Respond in this EXACT format:
+    SCENE: [Describe the immediate result of the action and the new situation in detail. Include dialogue and action.]
+    EVENT: [A 1-sentence summary of what happened for the memory logs.]
+    CHOICES: [Choice 1] | [Choice 2] | [Choice 3] | [Choice 4]
+  `;
 
   try {
     const response = await fetch(
-"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + API_KEY,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
-    })
-  }
-);
+      "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + API_KEY,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
 
     const data = await response.json();
-    loading.classList.add("hidden"); // Hide loading
-
-    if (data.error) {
-      renderMessage("ai", "Error: " + data.error.message);
-      return;
-    }
+    loading.classList.add("hidden");
 
     const text = data.candidates[0].content.parts[0].text;
+    
+    // Parsing the new format
     const scene = text.split("EVENT:")[0].replace("SCENE:", "").trim();
-    const event = text.split("EVENT:")[1]?.trim();
+    const eventPart = text.split("EVENT:")[1]?.split("CHOICES:")[0].trim();
+    const choicesPart = text.split("CHOICES:")[1]?.trim();
 
-    if (event && event.toLowerCase() !== "none") life.events.push(event);
+    // Update Life Data
+    if (eventPart && eventPart.toLowerCase() !== "none") life.events.push(eventPart);
     life.current = scene;
     localStorage.setItem("life", JSON.stringify(life));
+
+    // Show the full scene in chat
     renderMessage("ai", scene);
+
+    // Show choices as buttons
+    if (choicesPart) {
+      renderChoices(choicesPart.split("|"));
+    }
 
   } catch (err) {
     loading.classList.add("hidden");
-    renderMessage("ai", "Connection lost. Try again.");
+    renderMessage("ai", "Connection error. Try again.");
   }
+}
+
+function renderChoices(choices) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "choices-container";
+  
+  choices.forEach(choice => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.innerText = choice.trim();
+    btn.onclick = () => {
+      div.remove(); // Remove choices after clicking
+      sendMessage(btn.innerText);
+    };
+    div.appendChild(btn);
+  });
+  
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }

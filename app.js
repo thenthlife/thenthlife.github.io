@@ -3,7 +3,7 @@ const API_KEY = "AIzaSyAXdfH99xK2HWyLm-LJDIkLb07lXtHKlGs";
 let life = JSON.parse(localStorage.getItem("life")) || {
   summary: "",
   events: [],
-  current: "Your life is about to begin. What kind of life do you want to live?"
+  current: "Your nth life is about to begin. What kind of life do you want to live?"
 };
 
 renderMessage("ai", life.current);

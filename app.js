@@ -1,4 +1,4 @@
-const API_KEY = "PASTE_YOUR_GEMINI_KEY_HERE";
+const API_KEY = "AIzaSyAXdfH99xK2HWyLm-LJDIkLb07lXtHKlGs";
 
 let life = JSON.parse(localStorage.getItem("life"));
 

@@ -6,7 +6,8 @@ body {
   justify-content: center;
   height: 100vh;
 }
-//container info
+
+/* Fix: CSS comments use /* */, not // */
 .container {
   width: 100%;
   max-width: 600px;
@@ -45,26 +46,30 @@ h1 { font-size: 1.2rem; margin: 0; }
   gap: 10px;
 }
 
-/* Message Bubbles */
-#chat div {
+/* Message Bubbles - Base Styles */
+#chat .message {
   max-width: 80%;
   padding: 10px 15px;
   border-radius: 15px;
   line-height: 1.4;
+  word-wrap: break-word;
 }
 
-.user {
+/* User Message Styles */
+.user-message {
   align-self: flex-end;
   background-color: #007bff;
   color: white;
   border-bottom-right-radius: 2px !important;
 }
 
-.ai {
+/* AI Message Styles */
+.ai-message {
   align-self: flex-start;
   background-color: #e9e9eb;
   color: #333;
   border-bottom-left-radius: 2px !important;
+  white-space: pre-wrap; /* Critical for the typewriter effect to show line breaks */
 }
 
 .input-area {
@@ -107,8 +112,9 @@ button:hover { background: #0056b3; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 15px 0;
-  align-self: stretch; /* Makes buttons fill the width of the chat area */
+  margin: 10px 0;
+  align-self: flex-start; /* Keeps them left-aligned with AI bubbles */
+  width: 90%;
 }
 
 .choice-btn {
@@ -128,10 +134,10 @@ button:hover { background: #0056b3; }
 .choice-btn:hover {
   background: #007bff;
   color: #ffffff;
-  transform: translateY(-1px);
+  transform: translateX(5px); /* Subtle nudge right instead of up */
   box-shadow: 0 4px 8px rgba(0,123,255,0.2);
 }
 
 .choice-btn:active {
-  transform: translateY(0);
+  transform: translateX(2px);
 }

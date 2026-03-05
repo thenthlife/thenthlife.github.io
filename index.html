@@ -1,19 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alternate Life MVP</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Start Your Next Life</h1>
+  <div class="container">
+    <header>
+      <h1>Alternate Life</h1>
+      <button id="resetBtn" onclick="resetLife()">New Life</button>
+    </header>
 
-<div id="chat"></div>
+    <div id="chat"></div>
 
-<input id="userInput" placeholder="What do you do?" />
-<button onclick="sendMessage()">Send</button>
+    <div id="loading" class="hidden">AI is shaping your destiny...</div>
 
-<script src="app.js"></script>
+    <div class="input-area">
+      <input id="userInput" placeholder="What do you do?" onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
 
+  <script src="app.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const API_KEY = "AIzaSyAXdfH99xK2HWyLm-LJDIkLb07lXtHKlGs";
+const API_KEY = "Please enter your Gemini API Key to play:";
 
 let life = JSON.parse(localStorage.getItem("life")) || {
   summary: "",

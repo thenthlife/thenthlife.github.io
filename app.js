@@ -54,7 +54,7 @@ If something important happened, summarize it in one sentence.
 `;
 
   const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + AIzaSyAXdfH99xK2HWyLm-LJDIkLb07lXtHKlGs,
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -6,7 +6,7 @@ if (!life) {
   life = {
     summary: "",
     events: [],
-    current: "You are beginning a new life. Ask the user what life they want to live."
+    current: "Your life is about to begin. What kind of life do you want to live?"
   };
 }
 

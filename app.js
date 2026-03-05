@@ -1,17 +1,11 @@
 const API_KEY = "AIzaSyAXdfH99xK2HWyLm-LJDIkLb07lXtHKlGs";
 
-// Initialize life state from localStorage or default
-let life = JSON.parse(localStorage.getItem("life"));
+let life = JSON.parse(localStorage.getItem("life")) || {
+  summary: "",
+  events: [],
+  current: "Your life is about to begin. What kind of life do you want to live?"
+};
 
-if (!life) {
-  life = {
-    summary: "",
-    events: [],
-    current: "Your life is about to begin. What kind of life do you want to live?"
-  };
-}
-
-// Initial render
 renderMessage("ai", life.current);
 
 function renderMessage(role, text) {
@@ -23,38 +17,30 @@ function renderMessage(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+function resetLife() {
+  if (confirm("Are you sure you want to end this life and start over?")) {
+    localStorage.removeItem("life");
+    location.reload();
+  }
+}
+
 async function sendMessage() {
   const input = document.getElementById("userInput");
+  const loading = document.getElementById("loading");
   const userText = input.value.trim();
-  
-  if (!userText) return; // Do nothing if input is empty
+
+  if (!userText) return;
 
   input.value = "";
   renderMessage("user", userText);
+  loading.classList.remove("hidden"); // Show loading
 
-  const prompt = `
-You are a persistent life simulator.
-
-Life summary:
-${life.summary}
-
-Important events:
-${life.events.join("\n")}
-
-Current situation:
-${life.current}
-
-The user now says:
-${userText}
-
-Respond with two sections:
-
-SCENE:
-Describe what happens next in the life.
-
-EVENT:
-If something important happened, summarize it in one sentence.
-`;
+  const prompt = `You are a persistent life simulator.
+    Summary: ${life.summary}
+    Events: ${life.events.join("\n")}
+    Current: ${life.current}
+    User: ${userText}
+    Respond with SCENE: and EVENT: sections.`;
 
   try {
     const response = await fetch(
@@ -62,39 +48,29 @@ If something important happened, summarize it in one sentence.
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       }
     );
 
     const data = await response.json();
+    loading.classList.add("hidden"); // Hide loading
 
-    // Check for API errors (like invalid key or quota)
     if (data.error) {
-      renderMessage("ai", "API Error: " + data.error.message);
+      renderMessage("ai", "Error: " + data.error.message);
       return;
     }
 
     const text = data.candidates[0].content.parts[0].text;
-
-    // Logic to split the response into Scene and Event
     const scene = text.split("EVENT:")[0].replace("SCENE:", "").trim();
     const event = text.split("EVENT:")[1]?.trim();
 
-    if (event && event.toLowerCase() !== "none") {
-      life.events.push(event);
-    }
-
+    if (event && event.toLowerCase() !== "none") life.events.push(event);
     life.current = scene;
-
-    // Save progress
     localStorage.setItem("life", JSON.stringify(life));
-
     renderMessage("ai", scene);
 
-  } catch (error) {
-    console.error("Fetch error:", error);
-    renderMessage("ai", "System Error: Could not connect to the AI.");
+  } catch (err) {
+    loading.classList.add("hidden");
+    renderMessage("ai", "Connection lost. Try again.");
   }
 }

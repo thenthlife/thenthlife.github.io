@@ -141,3 +141,10 @@ button:hover { background: #0056b3; }
 .choice-btn:active {
   transform: translateX(2px);
 }
+
+sup {
+  vertical-align: baseline;
+  position: relative;
+  top: -0.4em;
+  font-size: 0.75em;
+}

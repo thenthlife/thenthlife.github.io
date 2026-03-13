@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nᵗʰ Life // Survival</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+<header>
+<h1>2nd_LIFE // SURVIVAL</h1>
+<div class="nav-cluster">
+<button onclick="location.href='index.html'">HOME</button>
+<button onclick="resetLife()" class="danger-btn">REBOOT</button>
+</div>
+</header>
+<div id="stats"></div>
+<div id="chat"></div>
+<div id="loading" class="hidden">SIMULATING_LETHALITY...</div>
+<div id="death-screen" class="hidden"></div>
+<div id="history-panel">
+<div class="history-header" onclick="toggleHistory()">[+] HISTORICAL_RECORDS_LOG</div>
+<div id="history-list" class="hidden"></div>
+</div>
+<div class="input-area">
+<input id="userInput" placeholder="COMMAND_INPUT..." onkeydown="if(event.key==='Enter') sendMessage()" />
+<button onclick="sendMessage()">EXECUTE</button>
+</div>
+</div>
+<script>const MODE = "survival";</script>
+<script src="app.js"></script>
+</body>
+</html>

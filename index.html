@@ -1,29 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The nᵗʰ Life MVP</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The nᵗʰ Life // PORTAL</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
-
-  <div class="container">
-    <header>
-      <h1>The n<sup>th</sup> Life</h1>
-      <button id="resetBtn" onclick="resetLife()">New Life</button>
-    </header>
-
-    <div id="chat"></div>
-
-    <div id="loading" class="hidden">AI is shaping your destiny...</div>
-
-    <div class="input-area">
-      <input id="userInput" placeholder="What do you do?" onkeydown="if(event.key==='Enter') sendMessage()" />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
+<body class="center-layout">
+<div class="container center">
+<header class="portal-header">
+<h1>THE n<sup>th</sup> LIFE</h1>
+<p class="status-text">SYSTEM_READY // SELECT_TIMELINE</p>
+</header>
+<div class="mode-select">
+<a href="free-roam.html" class="mode-btn">
+01 // FREE ROAM
+<span>Unrestricted Reality Simulation</span>
+</a>
+<a href="2nd-life.html" class="mode-btn">
+02 // 2nd LIFE SURVIVAL
+<span>Hardcore Tactical Logic (Permadeath)</span>
+</a>
+<a href="notable-lives.html" class="mode-btn">
+03 // NOTABLE LIVES
+<span>Archived Community Data</span>
+</a>
+</div>
+</div>
+<script>
+if(!localStorage.getItem("my_gemini_key")){
+const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
+if(key) localStorage.setItem("my_gemini_key", key);
+}
+</script>
 </body>
 </html>

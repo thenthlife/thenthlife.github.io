@@ -4,14 +4,11 @@ const STORAGE_KEY = `life_${MODE}`;
 let life = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     summary: "",
     events: [],
-    health: 100,
-    money: 50,
-    reputation: 0,
-    danger: 0,
+    health: 100, money: 50, reputation: 0, danger: 0,
     startTime: Date.now(),
     current: MODE === "survival" 
-        ? "SIMULATION_START: You awaken in a hostile world. Survival is the priority." 
-        : "SIMULATION_START: Define your existence."
+        ? "SIMULATION_START: You awaken in a hostile world. Define your existence." 
+        : "SIMULATION_START: Unrestricted reality. Define your existence."
 };
 
 function clampStats() {
@@ -19,13 +16,6 @@ function clampStats() {
     life.money = Math.max(0, life.money);
     life.reputation = Math.max(-100, Math.min(100, life.reputation));
     life.danger = Math.max(0, Math.min(100, life.danger));
-}
-
-function resetLife() {
-    if (confirm("TERMINATE TIMELINE?")) {
-        localStorage.removeItem(STORAGE_KEY);
-        location.reload();
-    }
 }
 
 function renderStats() {
@@ -41,7 +31,6 @@ function renderMessage(role, text, callback) {
     const div = document.createElement("div");
     div.className = `message ${role === "ai" ? "ai-message" : "user-message"}`;
     chat.appendChild(div);
-
     if (role === "ai") {
         let i = 0;
         const interval = setInterval(() => {
@@ -50,7 +39,7 @@ function renderMessage(role, text, callback) {
                 chat.scrollTop = chat.scrollHeight;
             } else {
                 clearInterval(interval);
-                if (callback) callback(); // Trigger death or choices after typing
+                if (callback) callback();
             }
         }, 15);
     } else {
@@ -62,25 +51,17 @@ function renderMessage(role, text, callback) {
 function renderChoices(actionsString) {
     const oldChoices = document.querySelector(".choice-container");
     if (oldChoices) oldChoices.remove();
-
     const choiceContainer = document.createElement("div");
     choiceContainer.className = "choice-container";
-
-    // Split the AI's provided choices (expecting comma separated)
     const actions = actionsString.split(",").map(a => a.trim()).slice(0, 4);
-    
     actions.forEach(act => {
         if (!act) return;
         const btn = document.createElement("button");
         btn.className = "choice-btn";
         btn.innerText = `> ${act}`;
-        btn.onclick = () => {
-            document.getElementById("userInput").value = act;
-            sendMessage();
-        };
+        btn.onclick = () => { document.getElementById("userInput").value = act; sendMessage(); };
         choiceContainer.appendChild(btn);
     });
-
     document.getElementById("chat").appendChild(choiceContainer);
 }
 
@@ -89,24 +70,25 @@ async function sendMessage() {
     const userText = input.value.trim();
     if (!userText || !API_KEY) return;
     input.value = "";
-    
-    // Clear choices immediately on input
     const oldChoices = document.querySelector(".choice-container");
     if (oldChoices) oldChoices.remove();
-
     renderMessage("user", userText);
     document.getElementById("loading").classList.remove("hidden");
 
+    const modeRules = MODE === "survival" 
+        ? "RULES: Brutal survival. Lethal consequences. Track stats. Output choices."
+        : "RULES: Sandbox. No constraints. Ignore stats. Output choices.";
+
     const prompt = `
         SYSTEM: nth life engine | MODE: ${MODE}
-        RULES: Be brutal. Logical consequences.
+        ${modeRules}
         PLAYER_HISTORY: ${life.summary}
         CURRENT_SCENE: ${life.current}
         PLAYER_ACTION: ${userText}
 
-        Respond ONLY in this format:
-        SCENE: [Narrative description]
-        EVENT: [Short log entry]
+        FORMAT:
+        SCENE: [Narrative]
+        EVENT: [Log]
         ${MODE === "survival" ? "STATS: hp +/-x, money +/-x, reputation +/-x, danger +/-x" : ""}
         CHOICES: [Action 1, Action 2, Action 3, Action 4]
         STATUS: [ALIVE or DEAD]
@@ -120,7 +102,6 @@ async function sendMessage() {
         const data = await resp.json();
         document.getElementById("loading").classList.add("hidden");
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR";
-
         const scene = raw.split("EVENT:")[0].replace("SCENE:", "").trim();
         const event = raw.split("EVENT:")[1]?.split("STATS:")[0]?.split("CHOICES:")[0]?.trim();
         const stats = raw.split("STATS:")[1]?.split("CHOICES:")[0]?.trim();
@@ -129,17 +110,15 @@ async function sendMessage() {
 
         if (MODE === "survival" && stats) {
             stats.split(",").forEach(s => {
-                const parts = s.trim().toLowerCase().split(" ");
-                if (parts.length >= 2) {
-                    const key = parts[0]; const val = parseInt(parts[1]);
-                    if (key.includes("hp")) life.health += val;
-                    if (key.includes("money") || key.includes("$")) life.money += val;
-                    if (key.includes("rep")) life.reputation += val;
-                    if (key.includes("danger")) life.danger += val;
+                const p = s.trim().toLowerCase().split(" ");
+                if (p.length >= 2) {
+                    if (p[0].includes("hp")) life.health += parseInt(p[1]);
+                    if (p[0].includes("money") || p[0].includes("$")) life.money += parseInt(p[1]);
+                    if (p[0].includes("rep")) life.reputation += parseInt(p[1]);
+                    if (p[0].includes("danger")) life.danger += parseInt(p[1]);
                 }
             });
         }
-
         clampStats();
         life.current = scene;
         if (event) life.events.push(event);
@@ -148,20 +127,13 @@ async function sendMessage() {
 
         renderMessage("ai", scene, () => {
             if (status === "DEAD" && MODE === "survival") {
-                recordDeath(event);
                 const ds = document.getElementById("death-screen");
                 ds.classList.remove("hidden");
-                ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p><p>REBOOTING...</p>`;
-                setTimeout(resetLife, 5000);
-            } else if (choices) {
-                renderChoices(choices);
-            }
+                ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p>`;
+                setTimeout(() => { localStorage.removeItem(STORAGE_KEY); location.reload(); }, 5000);
+            } else if (choices) { renderChoices(choices); }
         });
-
-    } catch (e) {
-        document.getElementById("loading").classList.add("hidden");
-        renderMessage("ai", "CONNECTION_ERROR");
-    }
+    } catch (e) { document.getElementById("loading").classList.add("hidden"); renderMessage("ai", "ERROR"); }
 }
 
-// ... rest of recordDeath, loadNotableLives, renderHistory from previous build ...
+window.onload = () => { renderStats(); renderMessage("ai", life.current); };

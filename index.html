@@ -1,37 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The nᵗʰ Life // PORTAL</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The nᵗʰ Life // PORTAL</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="center-layout">
-<div class="container center">
-<header class="portal-header">
-<h1>THE n<sup>th</sup> LIFE</h1>
-<p class="status-text">SYSTEM_READY // SELECT_TIMELINE</p>
-</header>
-<div class="mode-select">
-<a href="free-roam.html" class="mode-btn">
-01 // FREE ROAM
-<span>Unrestricted Reality Simulation</span>
-</a>
-<a href="2nd-life.html" class="mode-btn">
-02 // 2nd LIFE SURVIVAL
-<span>Hardcore Tactical Logic (Permadeath)</span>
-</a>
-<a href="notable-lives.html" class="mode-btn">
-03 // NOTABLE LIVES
-<span>Archived Community Data</span>
-</a>
-</div>
-</div>
-<script>
-if(!localStorage.getItem("my_gemini_key")){
-const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
-if(key) localStorage.setItem("my_gemini_key", key);
-}
-</script>
+<body class="portal-page">
+  <div class="scanlines"></div>
+
+  <div class="portal-container">
+    <header class="portal-header">
+      <h1>THE n<sup>th</sup> LIFE</h1>
+      <p class="status-text">SYSTEM_READY // SELECT_TIMELINE</p>
+    </header>
+
+    <nav class="mode-select">
+      <a href="free-roam.html" class="mode-btn">
+        <div class="btn-number">01</div>
+        <div class="btn-content">
+          <span class="btn-title">FREE ROAM</span>
+          <span class="btn-desc">Unrestricted Reality Simulation</span>
+        </div>
+      </a>
+
+      <a href="2nd-life.html" class="mode-btn">
+        <div class="btn-number">02</div>
+        <div class="btn-content">
+          <span class="btn-title">2nd LIFE SURVIVAL</span>
+          <span class="btn-desc">Hardcore Tactical Logic (Permadeath)</span>
+        </div>
+      </a>
+
+      <a href="notable-lives.html" class="mode-btn">
+        <div class="btn-number">03</div>
+        <div class="btn-content">
+          <span class="btn-title">NOTABLE LIVES</span>
+          <span class="btn-desc">Archived Community Data</span>
+        </div>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    if(!localStorage.getItem("my_gemini_key")){
+      const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
+      if(key) localStorage.setItem("my_gemini_key", key);
+    }
+  </script>
 </body>
 </html>

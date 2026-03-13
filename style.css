@@ -4,205 +4,62 @@
   --death-red: #ef4444;
   --bg-black: #000000;
 }
-
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 body {
   font-family: 'Courier New', Courier, monospace;
   background-color: var(--bg-black);
   color: var(--matrix-green);
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center; /* Horizontal Center */
-  align-items: center;     /* Vertical Center */
-  min-height: 100vh;
-  width: 100vw;
-  text-transform: uppercase;
-  overflow: hidden;
+  margin: 0; padding: 0;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; width: 100vw;
+  text-transform: uppercase; overflow: hidden;
 }
-
-/* --- CRT SCANLINE EFFECT (ENHANCED) --- */
 .scanlines {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.4) 50% /* Darkened for visibility */
-  );
-  background-size: 100% 4px; /* Increased size */
-  pointer-events: none;
-  z-index: 1000;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
+  background-size: 100% 4px; pointer-events: none; z-index: 1000;
 }
-
-.scanlines::after {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: rgba(16, 185, 129, 0.03); /* Subtle green tint */
-  opacity: 0;
-  z-index: 1001;
-  pointer-events: none;
-  animation: flicker 0.15s infinite;
-}
-
-@keyframes flicker {
-  0% { opacity: 0.1; }
-  50% { opacity: 0.05; }
-  100% { opacity: 0.08; }
-}
-
-/* --- PORTAL SPECIFIC LAYOUT --- */
-.portal-page {
-  background: radial-gradient(circle, #051a14 0%, #000000 70%); /* Depth gradient */
-}
-
-.portal-container {
-  width: 90%;
-  max-width: 500px;
-  margin: auto; /* FORCED CENTERING */
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-}
-
-.portal-header {
-  margin-bottom: 40px;
-  text-align: center;
-}
-
-.portal-header h1 {
-  font-size: 2.2rem;
-  letter-spacing: 6px;
-  margin: 0;
-  text-shadow: 0 0 15px var(--matrix-green);
-}
-
-.status-text {
-  font-size: 0.75rem;
-  letter-spacing: 2px;
-  margin-top: 10px;
-  opacity: 0.8;
-}
-
-.mode-select {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
-
+.portal-page { background: radial-gradient(circle, #051a14 0%, #000000 70%); }
+.portal-container { width: 90%; max-width: 500px; margin: auto; z-index: 10; display: flex; flex-direction: column; }
+.portal-header { margin-bottom: 40px; text-align: center; }
+.portal-header h1 { font-size: 2.2rem; letter-spacing: 6px; text-shadow: 0 0 15px var(--matrix-green); }
+.mode-select { display: flex; flex-direction: column; gap: 20px; width: 100%; }
 .mode-btn {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--dark-green);
-  text-decoration: none;
-  color: var(--matrix-green);
+  display: flex; align-items: center; border: 1px solid var(--dark-green);
+  text-decoration: none; color: var(--matrix-green);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   background: rgba(0, 10, 0, 0.6);
 }
-
-.btn-number {
-  padding: 25px;
-  font-size: 1.4rem;
-  border-right: 1px solid var(--dark-green);
-  font-weight: bold;
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.btn-content {
-  padding: 15px 25px;
-  text-align: left;
-}
-
-.btn-title {
-  display: block;
-  font-size: 1.1rem;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.btn-desc {
-  display: block;
-  font-size: 0.7rem;
-  opacity: 0.6;
-  margin-top: 6px;
-}
-
-.mode-btn:hover {
-  background: var(--matrix-green);
-  color: #000;
-  transform: scale(1.05); /* Modern Pop effect */
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-}
-
-/* --- SIMULATION PAGE LAYOUT (The Container fix) --- */
+.btn-number { padding: 25px; font-size: 1.4rem; border-right: 1px solid var(--dark-green); background: rgba(16, 185, 129, 0.05); }
+.btn-content { padding: 15px 25px; text-align: left; }
+.btn-title { display: block; font-size: 1.1rem; font-weight: bold; }
+.btn-desc { display: block; font-size: 0.7rem; opacity: 0.6; }
+.mode-btn:hover { background: var(--matrix-green); color: #000; transform: scale(1.05); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
 .container {
-  width: 100%;
-  max-width: 650px;
-  margin: auto; /* Ensures simulation pages also center */
-  background: var(--bg-black);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  border-left: 1px solid var(--dark-green);
-  border-right: 1px solid var(--dark-green);
-  position: relative;
+  width: 100%; max-width: 650px; background: var(--bg-black);
+  display: flex; flex-direction: column; height: 100vh;
+  border-left: 1px solid var(--dark-green); border-right: 1px solid var(--dark-green);
+  position: relative; margin: auto;
 }
-.choice-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 20px;
-    padding: 10px;
-    animation: terminalFadeIn 0.8s ease forwards;
-}
-
-.choice-btn {
-    background: rgba(16, 185, 129, 0.05);
-    border: 1px solid var(--dark-green);
-    color: var(--matrix-green);
-    padding: 15px;
-    font-size: 0.75rem;
-    text-align: left;
-    cursor: pointer;
-    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-family: inherit;
-    text-transform: uppercase;
-}
-
-.choice-btn:hover {
-    background: var(--matrix-green);
-    color: #000;
-    border-color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-}
-
-@keyframes terminalFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Ensure death screen is high priority */
-#death-screen {
-    z-index: 9999 !important;
-}
-
-/* Rest of the CSS remains the same as previous build... */
 header { padding: 15px; border-bottom: 1px solid var(--dark-green); display: flex; justify-content: space-between; align-items: center; }
 #chat { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
 .message { max-width: 90%; padding: 10px; font-size: 0.9rem; line-height: 1.5; }
 .user-message { align-self: flex-end; border: 1px solid var(--matrix-green); background: rgba(16, 185, 129, 0.1); }
 .ai-message { align-self: flex-start; border-left: 3px solid var(--matrix-green); background: rgba(0,0,0,0.5); white-space: pre-wrap; }
+.choice-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; padding: 10px; }
+.choice-btn {
+  background: rgba(16, 185, 129, 0.05); border: 1px solid var(--dark-green);
+  color: var(--matrix-green); padding: 15px; font-size: 0.75rem;
+  cursor: pointer; transition: 0.3s; font-family: inherit;
+}
+.choice-btn:hover { background: var(--matrix-green); color: #000; }
 .input-area { padding: 20px; border-top: 1px solid var(--dark-green); display: flex; gap: 10px; }
 input { flex: 1; background: transparent; border: 1px solid var(--dark-green); color: var(--matrix-green); padding: 12px; outline: none; font-family: inherit; }
-button { background: var(--dark-green); color: #fff; border: none; padding: 10px 20px; cursor: pointer; transition: 0.2s; font-family: inherit; }
-button:hover { background: var(--matrix-green); color: #000; }
+button { background: var(--dark-green); color: #fff; border: none; padding: 10px 20px; cursor: pointer; font-family: inherit; }
 #stats { padding: 10px; font-size: 0.8rem; border-bottom: 1px solid var(--dark-green); color: #fff; display: flex; justify-content: space-around; }
-#death-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; color: var(--death-red); text-align: center; }
+#death-screen {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.95); display: flex; flex-direction: column;
+  justify-content: center; align-items: center; z-index: 9999; color: var(--death-red); text-align: center;
+}
 .hidden { display: none !important; }
-#loading { text-align: center; font-size: 0.7rem; opacity: 0.5; }

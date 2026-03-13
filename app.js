@@ -11,6 +11,14 @@ let life = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
         : "SIMULATION_START: Unrestricted reality. Define your existence."
 };
 
+// --- FIX: EXPLICIT REBOOT ---
+function resetLife() {
+    if (confirm("TERMINATE TIMELINE?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+    }
+}
+
 function clampStats() {
     life.health = Math.max(0, Math.min(100, life.health));
     life.money = Math.max(0, life.money);
@@ -22,7 +30,7 @@ function renderStats() {
     if (MODE !== "survival") return;
     const stats = document.getElementById("stats");
     const best = localStorage.getItem("best_survival") || "0";
-    stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | BEST:${best}m`;
+    stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | BEST:${best}M`;
 }
 
 function renderMessage(role, text, callback) {
@@ -48,12 +56,18 @@ function renderMessage(role, text, callback) {
     }
 }
 
+// --- FIX: CLEAN CHOICE PARSING ---
 function renderChoices(actionsString) {
     const oldChoices = document.querySelector(".choice-container");
     if (oldChoices) oldChoices.remove();
     const choiceContainer = document.createElement("div");
     choiceContainer.className = "choice-container";
-    const actions = actionsString.split(",").map(a => a.trim()).slice(0, 4);
+    
+    // Split and scrub brackets [] and numbers 1. from AI output
+    const actions = actionsString.split(",")
+        .map(a => a.trim().replace(/[\[\]]/g, "").replace(/^\d+\.\s*/, ""))
+        .slice(0, 4);
+
     actions.forEach(act => {
         if (!act) return;
         const btn = document.createElement("button");
@@ -102,20 +116,29 @@ async function sendMessage() {
         const data = await resp.json();
         document.getElementById("loading").classList.add("hidden");
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR";
+
+        // --- FIX: ROBUST PARSING FALLBACKS ---
         const scene = raw.split("EVENT:")[0].replace("SCENE:", "").trim();
-        const event = raw.split("EVENT:")[1]?.split("STATS:")[0]?.split("CHOICES:")[0]?.trim();
-        const stats = raw.split("STATS:")[1]?.split("CHOICES:")[0]?.trim();
-        const choices = raw.split("CHOICES:")[1]?.split("STATUS:")[0]?.trim();
-        const status = raw.split("STATUS:")[1]?.trim();
+        const eventPart = raw.split("EVENT:")[1] || "";
+        const event = eventPart.split("STATS:")[0].split("CHOICES:")[0].trim();
+        const statsPart = raw.split("STATS:")[1] || "";
+        const stats = statsPart.split("CHOICES:")[0].trim();
+        const choicesPart = raw.split("CHOICES:")[1] || "";
+        const choices = choicesPart.split("STATUS:")[0].trim();
+        const statusPart = raw.split("STATUS:")[1] || "ALIVE";
+        const status = statusPart.trim();
 
         if (MODE === "survival" && stats) {
             stats.split(",").forEach(s => {
                 const p = s.trim().toLowerCase().split(" ");
                 if (p.length >= 2) {
-                    if (p[0].includes("hp")) life.health += parseInt(p[1]);
-                    if (p[0].includes("money") || p[0].includes("$")) life.money += parseInt(p[1]);
-                    if (p[0].includes("rep")) life.reputation += parseInt(p[1]);
-                    if (p[0].includes("danger")) life.danger += parseInt(p[1]);
+                    const val = parseInt(p[1]);
+                    if (!isNaN(val)) {
+                        if (p[0].includes("hp")) life.health += val;
+                        if (p[0].includes("money") || p[0].includes("$")) life.money += val;
+                        if (p[0].includes("rep")) life.reputation += val;
+                        if (p[0].includes("danger")) life.danger += val;
+                    }
                 }
             });
         }
@@ -126,14 +149,19 @@ async function sendMessage() {
         renderStats();
 
         renderMessage("ai", scene, () => {
-            if (status === "DEAD" && MODE === "survival") {
+            if (status.includes("DEAD") && MODE === "survival") {
                 const ds = document.getElementById("death-screen");
                 ds.classList.remove("hidden");
                 ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p>`;
                 setTimeout(() => { localStorage.removeItem(STORAGE_KEY); location.reload(); }, 5000);
-            } else if (choices) { renderChoices(choices); }
+            } else if (choices && choices.length > 5) { 
+                renderChoices(choices); 
+            }
         });
-    } catch (e) { document.getElementById("loading").classList.add("hidden"); renderMessage("ai", "ERROR"); }
+    } catch (e) { 
+        document.getElementById("loading").classList.add("hidden"); 
+        renderMessage("ai", "ERROR: ENGINE_FAILURE"); 
+    }
 }
 
 window.onload = () => { renderStats(); renderMessage("ai", life.current); };

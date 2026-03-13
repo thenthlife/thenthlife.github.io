@@ -152,6 +152,45 @@ body {
   border-right: 1px solid var(--dark-green);
   position: relative;
 }
+.choice-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 10px;
+    animation: terminalFadeIn 0.8s ease forwards;
+}
+
+.choice-btn {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid var(--dark-green);
+    color: var(--matrix-green);
+    padding: 15px;
+    font-size: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: inherit;
+    text-transform: uppercase;
+}
+
+.choice-btn:hover {
+    background: var(--matrix-green);
+    color: #000;
+    border-color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes terminalFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ensure death screen is high priority */
+#death-screen {
+    z-index: 9999 !important;
+}
 
 /* Rest of the CSS remains the same as previous build... */
 header { padding: 15px; border-bottom: 1px solid var(--dark-green); display: flex; justify-content: space-between; align-items: center; }

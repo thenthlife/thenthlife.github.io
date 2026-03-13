@@ -1,21 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>nᵗʰ Life // Archives</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2ND_LIFE // SURVIVAL</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-<header>
-<h1>NOTABLE_LIVES // ARCHIVE</h1>
-<button onclick="location.href='index.html'">HOME</button>
-</header>
-<div id="chat"></div>
-</div>
-<script>const MODE = "notable";</script>
-<script src="app.js"></script>
-<script>window.onload = () => loadNotableLives();</script>
+    <div class="scanlines"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">2ND_LIFE // SURVIVAL</div>
+            <div class="controls">
+                <button onclick="location.href='index.html'">HOME</button>
+                <button onclick="resetLife()" style="background: var(--death-red); color: white;">REBOOT</button>
+            </div>
+        </header>
+
+        <div id="stats">
+            INITIALIZING_BIOMETRICS...
+        </div>
+
+        <div id="chat">
+            </div>
+
+        <div id="loading" class="hidden">
+            <span class="pulse">>> ANALYZING_PROBABILITY_VECTORS...</span>
+        </div>
+
+        <div class="history-wrapper">
+            <div class="history-header" onclick="toggleHistory()" style="cursor: pointer; padding: 10px; border-top: 1px solid var(--dark-green); background: rgba(16, 185, 129, 0.05); font-size: 0.8rem;">
+                [+] HISTORICAL_RECORDS_LOG
+            </div>
+            <div id="history-content" class="hidden" style="max-height: 150px; overflow-y: auto; padding: 10px; font-size: 0.7rem; border-top: 1px solid var(--dark-green); opacity: 0.7;">
+                </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="COMMAND_INPUT..." onkeydown="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">EXECUTE</button>
+        </div>
+    </div>
+
+    <div id="death-screen" class="hidden">
+        <h1>LIFE TERMINATED</h1>
+    </div>
+
+    <script>
+        // Set simulation mode for engine
+        const MODE = "survival";
+    </script>
+    <script src="app.js"></script>
 </body>
 </html>

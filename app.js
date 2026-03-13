@@ -1,159 +1,192 @@
-// 1. API Key Setup
 let API_KEY = localStorage.getItem("my_gemini_key");
+const STORAGE_KEY = `life_${MODE}`;
 
-if (!API_KEY || API_KEY === "null") {
-    API_KEY = prompt("Please enter your Gemini API Key:");
-    if (API_KEY) {
-        localStorage.setItem("my_gemini_key", API_KEY);
-    }
-}
-
-// 2. Life Data Initialization
-let life = JSON.parse(localStorage.getItem("life")) || {
-  summary: "",
-  events: [],
-  current: "Your nᵗʰ life is about to begin. What kind of life do you want to live?"
+let life = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+    summary: "",
+    events: [],
+    health: 100,
+    money: 50,
+    reputation: 0,
+    danger: 0,
+    startTime: Date.now(),
+    current: MODE === "survival" 
+        ? "SIMULATION_START: You awaken in a hostile world." 
+        : "SIMULATION_START: Define your existence."
 };
 
-// Start the game with the typewriter effect for the intro
-window.onload = () => {
-    renderMessage("ai", life.current);
-};
-
-// 3. Typewriter Core Logic
-function typeText(element, text, speed = 20, callback) {
-  let i = 0;
-  element.innerHTML = ""; 
-  const timer = setInterval(() => {
-    if (i < text.length) {
-      element.innerHTML += text.charAt(i);
-      i++;
-      const chat = document.getElementById("chat");
-      chat.scrollTop = chat.scrollHeight; 
-    } else {
-      clearInterval(timer);
-      if (callback) callback(); // Trigger buttons/next steps here
-    }
-  }, speed);
+function clampStats() {
+    life.health = Math.max(0, Math.min(100, life.health));
+    life.money = Math.max(0, life.money);
+    life.reputation = Math.max(-100, Math.min(100, life.reputation));
+    life.danger = Math.max(0, Math.min(100, life.danger));
 }
 
-// 4. Enhanced Message Renderer
-function renderMessage(role, text, callback) {
-  const chat = document.getElementById("chat");
-  const div = document.createElement("div");
-  // Ensure class names match your CSS (ai-message / user-message)
-  div.className = `message ${role === 'ai' ? 'ai-message' : 'user-message'}`;
-  chat.appendChild(div);
-
-  if (role === "ai") {
-    typeText(div, text, 20, callback);
-  } else {
-    div.innerText = text;
-    if (callback) callback();
-    chat.scrollTop = chat.scrollHeight;
-  }
-}
-
-// 5. Reset Life
 function resetLife() {
-  if (confirm("Are you sure you want to end this life and start over?")) {
-    localStorage.removeItem("life");
-    location.reload();
-  }
-}
-
-// 6. Send Message Logic
-async function sendMessage(manualText) {
-  const input = document.getElementById("userInput");
-  const loading = document.getElementById("loading");
-  const userText = manualText || input.value.trim();
-  
-  if (!userText) return;
-
-  if (!manualText) input.value = "";
-  
-  // Remove any existing choice buttons when a new message is sent
-  const oldChoices = document.querySelector(".choices-container");
-  if (oldChoices) oldChoices.remove();
-
-  renderMessage("user", userText);
-  loading.classList.remove("hidden");
-
-  const prompt = `
-    You are a life simulator. 
-    Current Life Info: ${life.summary}
-    Past Events: ${life.events.join(", ")}
-    Current Situation: ${life.current}
-
-    The user does: ${userText}
-
-    Respond in this EXACT format:
-    SCENE: [Describe the immediate result of the action and the new situation in detail. Include dialogue and action.]
-    EVENT: [A 1-sentence summary of what happened for the memory logs.]
-    CHOICES: [Choice 1] | [Choice 2] | [Choice 3] | [Choice 4]
-  `;
-
-  try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + API_KEY,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      }
-    );
-
-    const data = await response.json();
-    loading.classList.add("hidden");
-
-    if (data.error) {
-        renderMessage("ai", "API Error: " + data.error.message);
-        return;
+    if (confirm("TERMINATE TIMELINE?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
     }
-
-    const text = data.candidates[0].content.parts[0].text;
-    
-    // Parsing
-    const scene = text.split("EVENT:")[0].replace("SCENE:", "").trim();
-    const eventPart = text.split("EVENT:")[1]?.split("CHOICES:")[0].trim();
-    const choicesPart = text.split("CHOICES:")[1]?.trim();
-
-    // Update Storage
-    if (eventPart && eventPart.toLowerCase() !== "none") life.events.push(eventPart);
-    life.current = scene;
-    localStorage.setItem("life", JSON.stringify(life));
-
-    // Render Scene then render Choices
-    renderMessage("ai", scene, () => {
-      if (choicesPart) {
-        renderChoices(choicesPart.split("|"));
-      }
-    });
-
-  } catch (err) {
-    loading.classList.add("hidden");
-    renderMessage("ai", "Connection error. Check your key or internet.");
-    console.error(err);
-  }
 }
 
-// 7. Choice Button Logic
-function renderChoices(choices) {
-  const chat = document.getElementById("chat");
-  const div = document.createElement("div");
-  div.className = "choices-container";
-  
-  choices.forEach(choice => {
-    const btn = document.createElement("button");
-    btn.className = "choice-btn";
-    btn.innerText = choice.trim();
-    btn.onclick = () => {
-      div.remove(); 
-      sendMessage(btn.innerText);
+function renderStats() {
+    if (MODE !== "survival") return;
+    const stats = document.getElementById("stats");
+    const best = localStorage.getItem("best_survival") || "0";
+    stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | BEST:${best}m`;
+}
+
+function renderMessage(role, text) {
+    const chat = document.getElementById("chat");
+    if (!chat) return;
+    const div = document.createElement("div");
+    div.className = `message ${role === "ai" ? "ai-message" : "user-message"}`;
+    chat.appendChild(div);
+
+    if (role === "ai") {
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < text.length) {
+                div.innerHTML += text[i++];
+                chat.scrollTop = chat.scrollHeight;
+            } else clearInterval(interval);
+        }, 15);
+    } else {
+        div.innerText = text;
+        chat.scrollTop = chat.scrollHeight;
+    }
+}
+
+function updateSummary() {
+    life.summary = life.events.slice(-5).join(" | ");
+}
+
+function recordDeath(cause) {
+    const duration = Math.floor((Date.now() - life.startTime) / 60000);
+    const best = parseInt(localStorage.getItem("best_survival") || 0);
+    if (duration > best) localStorage.setItem("best_survival", duration);
+
+    const historyEntry = {
+        date: new Date().toISOString().split("T")[0],
+        duration: `${duration}m`,
+        cause: cause || "REACTION_FAILURE"
     };
-    div.appendChild(btn);
-  });
-  
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+
+    const history = JSON.parse(localStorage.getItem("survival_history") || "[]");
+    history.unshift(historyEntry);
+    localStorage.setItem("survival_history", JSON.stringify(history));
+
+    // PROMOTE TO NOTABLE LIVES (If survived > 2 mins)
+    if (duration >= 2) {
+        const archives = JSON.parse(localStorage.getItem("notableLives") || "[]");
+        archives.unshift({
+            date: historyEntry.date,
+            mode: "SURVIVAL",
+            events: [...life.events, `TERMINATED: ${cause}`]
+        });
+        localStorage.setItem("notableLives", JSON.stringify(archives.slice(0, 15)));
+    }
 }
+
+function renderHistory() {
+    const list = document.getElementById("history-list");
+    if (!list) return;
+    const history = JSON.parse(localStorage.getItem("survival_history") || "[]");
+    list.innerHTML = history.length ? "" : "NO_RECORDS_FOUND";
+    history.forEach(h => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `[${h.date}] SURVIVED:${h.duration} <span>CAUSE:${h.cause}</span>`;
+        list.appendChild(div);
+    });
+}
+
+function toggleHistory() {
+    document.getElementById("history-list").classList.toggle("hidden");
+}
+
+async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const userText = input.value.trim();
+    if (!userText || !API_KEY) return;
+    input.value = "";
+    renderMessage("user", userText);
+    document.getElementById("loading").classList.remove("hidden");
+
+    const prompt = `
+        SYSTEM: nth life engine | MODE: ${MODE}
+        RULES: No sugarcoating. Logical consequences. Permadeath enabled.
+        PLAYER_HISTORY: ${life.summary}
+        CURRENT_SCENE: ${life.current}
+        PLAYER_ACTION: ${userText}
+        Respond format:
+        SCENE: [Text]
+        EVENT: [Short Log]
+        ${MODE === "survival" ? "STATS: hp +/-x, money +/-x, reputation +/-x, danger +/-x" : ""}
+        STATUS: [ALIVE or DEAD]
+    `;
+
+    try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await resp.json();
+        document.getElementById("loading").classList.add("hidden");
+        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR";
+
+        const scene = raw.split("EVENT:")[0].replace("SCENE:", "").trim();
+        const event = raw.split("EVENT:")[1]?.split("STATS:")[0]?.trim();
+        const stats = raw.split("STATS:")[1]?.split("STATUS:")[0];
+        const status = raw.split("STATUS:")[1]?.trim();
+
+        if (MODE === "survival" && stats) {
+            stats.split(",").forEach(s => {
+                const parts = s.trim().toLowerCase().split(" ");
+                if (parts.length < 2) return;
+                const key = parts[0]; const val = parseInt(parts[1]);
+                if (isNaN(val)) return;
+                if (key.includes("hp")) life.health += val;
+                if (key.includes("money") || key.includes("$")) life.money += val;
+                if (key.includes("rep")) life.reputation += val;
+                if (key.includes("danger")) life.danger += val;
+            });
+        }
+
+        clampStats();
+        life.current = scene;
+        if (event) life.events.push(event);
+        updateSummary();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(life));
+        renderStats();
+        renderMessage("ai", scene);
+
+        if (status === "DEAD" && MODE === "survival") {
+            recordDeath(event);
+            const ds = document.getElementById("death-screen");
+            ds.classList.remove("hidden");
+            ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p><p>REBOOTING...</p>`;
+            setTimeout(resetLife, 4000);
+        }
+    } catch (e) {
+        document.getElementById("loading").classList.add("hidden");
+        renderMessage("ai", "CONNECTION_ERROR");
+    }
+}
+
+function loadNotableLives() {
+    const chat = document.getElementById("chat");
+    const archives = JSON.parse(localStorage.getItem("notableLives") || "[]");
+    chat.innerHTML = archives.length ? "" : "<div class='message ai-message'>ARCHIVE_EMPTY</div>";
+    archives.forEach(a => {
+        const div = document.createElement("div");
+        div.className = "message ai-message";
+        div.innerHTML = `<strong>[${a.date}] MODE:${a.mode}</strong><br>${a.events.join("<br>")}`;
+        chat.appendChild(div);
+    });
+}
+
+window.onload = () => {
+    renderStats();
+    renderMessage("ai", life.current);
+    if (MODE === "survival") renderHistory();
+};

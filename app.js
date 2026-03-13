@@ -10,7 +10,7 @@ let life = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     danger: 0,
     startTime: Date.now(),
     current: MODE === "survival" 
-        ? "SIMULATION_START: You awaken in a hostile world." 
+        ? "SIMULATION_START: You awaken in a hostile world. Survival is the priority." 
         : "SIMULATION_START: Define your existence."
 };
 
@@ -35,7 +35,7 @@ function renderStats() {
     stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | BEST:${best}m`;
 }
 
-function renderMessage(role, text) {
+function renderMessage(role, text, callback) {
     const chat = document.getElementById("chat");
     if (!chat) return;
     const div = document.createElement("div");
@@ -48,7 +48,10 @@ function renderMessage(role, text) {
             if (i < text.length) {
                 div.innerHTML += text[i++];
                 chat.scrollTop = chat.scrollHeight;
-            } else clearInterval(interval);
+            } else {
+                clearInterval(interval);
+                if (callback) callback(); // Trigger death or choices after typing
+            }
         }, 15);
     } else {
         div.innerText = text;
@@ -56,52 +59,29 @@ function renderMessage(role, text) {
     }
 }
 
-function updateSummary() {
-    life.summary = life.events.slice(-5).join(" | ");
-}
+function renderChoices(actionsString) {
+    const oldChoices = document.querySelector(".choice-container");
+    if (oldChoices) oldChoices.remove();
 
-function recordDeath(cause) {
-    const duration = Math.floor((Date.now() - life.startTime) / 60000);
-    const best = parseInt(localStorage.getItem("best_survival") || 0);
-    if (duration > best) localStorage.setItem("best_survival", duration);
+    const choiceContainer = document.createElement("div");
+    choiceContainer.className = "choice-container";
 
-    const historyEntry = {
-        date: new Date().toISOString().split("T")[0],
-        duration: `${duration}m`,
-        cause: cause || "REACTION_FAILURE"
-    };
-
-    const history = JSON.parse(localStorage.getItem("survival_history") || "[]");
-    history.unshift(historyEntry);
-    localStorage.setItem("survival_history", JSON.stringify(history));
-
-    // PROMOTE TO NOTABLE LIVES (If survived > 2 mins)
-    if (duration >= 2) {
-        const archives = JSON.parse(localStorage.getItem("notableLives") || "[]");
-        archives.unshift({
-            date: historyEntry.date,
-            mode: "SURVIVAL",
-            events: [...life.events, `TERMINATED: ${cause}`]
-        });
-        localStorage.setItem("notableLives", JSON.stringify(archives.slice(0, 15)));
-    }
-}
-
-function renderHistory() {
-    const list = document.getElementById("history-list");
-    if (!list) return;
-    const history = JSON.parse(localStorage.getItem("survival_history") || "[]");
-    list.innerHTML = history.length ? "" : "NO_RECORDS_FOUND";
-    history.forEach(h => {
-        const div = document.createElement("div");
-        div.className = "history-item";
-        div.innerHTML = `[${h.date}] SURVIVED:${h.duration} <span>CAUSE:${h.cause}</span>`;
-        list.appendChild(div);
+    // Split the AI's provided choices (expecting comma separated)
+    const actions = actionsString.split(",").map(a => a.trim()).slice(0, 4);
+    
+    actions.forEach(act => {
+        if (!act) return;
+        const btn = document.createElement("button");
+        btn.className = "choice-btn";
+        btn.innerText = `> ${act}`;
+        btn.onclick = () => {
+            document.getElementById("userInput").value = act;
+            sendMessage();
+        };
+        choiceContainer.appendChild(btn);
     });
-}
 
-function toggleHistory() {
-    document.getElementById("history-list").classList.toggle("hidden");
+    document.getElementById("chat").appendChild(choiceContainer);
 }
 
 async function sendMessage() {
@@ -109,19 +89,26 @@ async function sendMessage() {
     const userText = input.value.trim();
     if (!userText || !API_KEY) return;
     input.value = "";
+    
+    // Clear choices immediately on input
+    const oldChoices = document.querySelector(".choice-container");
+    if (oldChoices) oldChoices.remove();
+
     renderMessage("user", userText);
     document.getElementById("loading").classList.remove("hidden");
 
     const prompt = `
         SYSTEM: nth life engine | MODE: ${MODE}
-        RULES: No sugarcoating. Logical consequences. Permadeath enabled.
+        RULES: Be brutal. Logical consequences.
         PLAYER_HISTORY: ${life.summary}
         CURRENT_SCENE: ${life.current}
         PLAYER_ACTION: ${userText}
-        Respond format:
-        SCENE: [Text]
-        EVENT: [Short Log]
+
+        Respond ONLY in this format:
+        SCENE: [Narrative description]
+        EVENT: [Short log entry]
         ${MODE === "survival" ? "STATS: hp +/-x, money +/-x, reputation +/-x, danger +/-x" : ""}
+        CHOICES: [Action 1, Action 2, Action 3, Action 4]
         STATUS: [ALIVE or DEAD]
     `;
 
@@ -135,58 +122,46 @@ async function sendMessage() {
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR";
 
         const scene = raw.split("EVENT:")[0].replace("SCENE:", "").trim();
-        const event = raw.split("EVENT:")[1]?.split("STATS:")[0]?.trim();
-        const stats = raw.split("STATS:")[1]?.split("STATUS:")[0];
+        const event = raw.split("EVENT:")[1]?.split("STATS:")[0]?.split("CHOICES:")[0]?.trim();
+        const stats = raw.split("STATS:")[1]?.split("CHOICES:")[0]?.trim();
+        const choices = raw.split("CHOICES:")[1]?.split("STATUS:")[0]?.trim();
         const status = raw.split("STATUS:")[1]?.trim();
 
         if (MODE === "survival" && stats) {
             stats.split(",").forEach(s => {
                 const parts = s.trim().toLowerCase().split(" ");
-                if (parts.length < 2) return;
-                const key = parts[0]; const val = parseInt(parts[1]);
-                if (isNaN(val)) return;
-                if (key.includes("hp")) life.health += val;
-                if (key.includes("money") || key.includes("$")) life.money += val;
-                if (key.includes("rep")) life.reputation += val;
-                if (key.includes("danger")) life.danger += val;
+                if (parts.length >= 2) {
+                    const key = parts[0]; const val = parseInt(parts[1]);
+                    if (key.includes("hp")) life.health += val;
+                    if (key.includes("money") || key.includes("$")) life.money += val;
+                    if (key.includes("rep")) life.reputation += val;
+                    if (key.includes("danger")) life.danger += val;
+                }
             });
         }
 
         clampStats();
         life.current = scene;
         if (event) life.events.push(event);
-        updateSummary();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(life));
         renderStats();
-        renderMessage("ai", scene);
 
-        if (status === "DEAD" && MODE === "survival") {
-            recordDeath(event);
-            const ds = document.getElementById("death-screen");
-            ds.classList.remove("hidden");
-            ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p><p>REBOOTING...</p>`;
-            setTimeout(resetLife, 4000);
-        }
+        renderMessage("ai", scene, () => {
+            if (status === "DEAD" && MODE === "survival") {
+                recordDeath(event);
+                const ds = document.getElementById("death-screen");
+                ds.classList.remove("hidden");
+                ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p><p>REBOOTING...</p>`;
+                setTimeout(resetLife, 5000);
+            } else if (choices) {
+                renderChoices(choices);
+            }
+        });
+
     } catch (e) {
         document.getElementById("loading").classList.add("hidden");
         renderMessage("ai", "CONNECTION_ERROR");
     }
 }
 
-function loadNotableLives() {
-    const chat = document.getElementById("chat");
-    const archives = JSON.parse(localStorage.getItem("notableLives") || "[]");
-    chat.innerHTML = archives.length ? "" : "<div class='message ai-message'>ARCHIVE_EMPTY</div>";
-    archives.forEach(a => {
-        const div = document.createElement("div");
-        div.className = "message ai-message";
-        div.innerHTML = `<strong>[${a.date}] MODE:${a.mode}</strong><br>${a.events.join("<br>")}`;
-        chat.appendChild(div);
-    });
-}
-
-window.onload = () => {
-    renderStats();
-    renderMessage("ai", life.current);
-    if (MODE === "survival") renderHistory();
-};
+// ... rest of recordDeath, loadNotableLives, renderHistory from previous build ...

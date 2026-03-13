@@ -11,12 +11,17 @@ let life = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
         : "SIMULATION_START: Unrestricted reality. Define your existence."
 };
 
-// --- FIX: EXPLICIT REBOOT ---
 function resetLife() {
     if (confirm("TERMINATE TIMELINE?")) {
         localStorage.removeItem(STORAGE_KEY);
         location.reload();
     }
+}
+
+// --- NEW: TIME CALCULATION ---
+function getSurvivalTime() {
+    const diff = Math.floor((Date.now() - life.startTime) / 60000); // Minutes
+    return diff;
 }
 
 function clampStats() {
@@ -30,7 +35,40 @@ function renderStats() {
     if (MODE !== "survival") return;
     const stats = document.getElementById("stats");
     const best = localStorage.getItem("best_survival") || "0";
-    stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | BEST:${best}M`;
+    const currentMins = getSurvivalTime();
+    stats.innerHTML = `HP:${life.health} | $:${life.money} | REP:${life.reputation} | RISK:${life.danger} | TIME:${currentMins}M (BEST:${best}M)`;
+}
+
+// --- NEW: HISTORY LOG LOGIC ---
+function toggleHistory() {
+    const log = document.getElementById("history-content");
+    log.classList.toggle("hidden");
+}
+
+function renderHistory() {
+    const container = document.getElementById("history-content");
+    if (!container) return;
+    container.innerHTML = life.events.map(e => `<div class="log-entry">>> ${e}</div>`).join("");
+}
+
+// --- NEW: NOTABLE LIVES ARCHIVAL ---
+function recordDeath(cause) {
+    const duration = getSurvivalTime();
+    const archives = JSON.parse(localStorage.getItem("notable_lives") || "[]");
+    
+    const entry = {
+        date: new Date().toLocaleDateString(),
+        duration: duration,
+        cause: cause,
+        rep: life.reputation
+    };
+    
+    archives.push(entry);
+    localStorage.setItem("notable_lives", JSON.stringify(archives));
+    
+    // Update personal best
+    const best = localStorage.getItem("best_survival") || 0;
+    if (duration > best) localStorage.setItem("best_survival", duration);
 }
 
 function renderMessage(role, text, callback) {
@@ -56,14 +94,12 @@ function renderMessage(role, text, callback) {
     }
 }
 
-// --- FIX: CLEAN CHOICE PARSING ---
 function renderChoices(actionsString) {
     const oldChoices = document.querySelector(".choice-container");
     if (oldChoices) oldChoices.remove();
     const choiceContainer = document.createElement("div");
     choiceContainer.className = "choice-container";
     
-    // Split and scrub brackets [] and numbers 1. from AI output
     const actions = actionsString.split(",")
         .map(a => a.trim().replace(/[\[\]]/g, "").replace(/^\d+\.\s*/, ""))
         .slice(0, 4);
@@ -84,8 +120,10 @@ async function sendMessage() {
     const userText = input.value.trim();
     if (!userText || !API_KEY) return;
     input.value = "";
+    
     const oldChoices = document.querySelector(".choice-container");
     if (oldChoices) oldChoices.remove();
+
     renderMessage("user", userText);
     document.getElementById("loading").classList.remove("hidden");
 
@@ -96,7 +134,7 @@ async function sendMessage() {
     const prompt = `
         SYSTEM: nth life engine | MODE: ${MODE}
         ${modeRules}
-        PLAYER_HISTORY: ${life.summary}
+        PLAYER_HISTORY: ${life.events.slice(-5).join(" | ")}
         CURRENT_SCENE: ${life.current}
         PLAYER_ACTION: ${userText}
 
@@ -117,7 +155,6 @@ async function sendMessage() {
         document.getElementById("loading").classList.add("hidden");
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR";
 
-        // --- FIX: ROBUST PARSING FALLBACKS ---
         const scene = raw.split("EVENT:")[0].replace("SCENE:", "").trim();
         const eventPart = raw.split("EVENT:")[1] || "";
         const event = eventPart.split("STATS:")[0].split("CHOICES:")[0].trim();
@@ -125,8 +162,7 @@ async function sendMessage() {
         const stats = statsPart.split("CHOICES:")[0].trim();
         const choicesPart = raw.split("CHOICES:")[1] || "";
         const choices = choicesPart.split("STATUS:")[0].trim();
-        const statusPart = raw.split("STATUS:")[1] || "ALIVE";
-        const status = statusPart.trim();
+        const status = (raw.split("STATUS:")[1] || "ALIVE").trim();
 
         if (MODE === "survival" && stats) {
             stats.split(",").forEach(s => {
@@ -142,26 +178,33 @@ async function sendMessage() {
                 }
             });
         }
+        
         clampStats();
         life.current = scene;
         if (event) life.events.push(event);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(life));
         renderStats();
+        renderHistory();
 
         renderMessage("ai", scene, () => {
             if (status.includes("DEAD") && MODE === "survival") {
+                recordDeath(event);
                 const ds = document.getElementById("death-screen");
                 ds.classList.remove("hidden");
-                ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p>`;
-                setTimeout(() => { localStorage.removeItem(STORAGE_KEY); location.reload(); }, 5000);
+                ds.innerHTML = `<h1>LIFE TERMINATED</h1><p>CAUSE: ${event}</p><p>SURVIVED: ${getSurvivalTime()}M</p>`;
+                setTimeout(() => { localStorage.removeItem(STORAGE_KEY); location.reload(); }, 6000);
             } else if (choices && choices.length > 5) { 
                 renderChoices(choices); 
             }
         });
     } catch (e) { 
         document.getElementById("loading").classList.add("hidden"); 
-        renderMessage("ai", "ERROR: ENGINE_FAILURE"); 
+        renderMessage("ai", "ERROR: ENGINE_OFFLINE"); 
     }
 }
 
-window.onload = () => { renderStats(); renderMessage("ai", life.current); };
+window.onload = () => { 
+    renderStats(); 
+    renderHistory();
+    renderMessage("ai", life.current); 
+};

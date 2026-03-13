@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="portal-page">
+  <div id="boot-sequence" class="boot-overlay">
+    <div id="boot-log"></div>
+  </div>
+
   <div class="scanlines"></div>
 
   <div class="portal-container">
@@ -40,7 +44,7 @@
         </div>
       </a>
     </nav>
-    
+
     <footer class="portal-footer">
       <a href="https://github.com/thenthlife/thenthlife.github.io/blob/main/README.md" target="_blank" class="manual-link">
         [!] ACCESS_SYSTEM_MANUAL
@@ -49,10 +53,47 @@
   </div>
 
   <script>
-    if(!localStorage.getItem("my_gemini_key")){
-      const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
-      if(key) localStorage.setItem("my_gemini_key", key);
+    // BOOT SEQUENCE LOGIC
+    const bootLogs = [
+      "INITIALIZING_QUANTUM_CORE...",
+      "VERIFYING_NEURAL_LINK...",
+      "LOADING_GEMINI_2.5_FLASH_DRIVERS...",
+      "DECRYPTING_TIMELINE_MATRICES...",
+      "SCANNING_LOCAL_STORAGE...",
+      "ESTABLISHING_CONNECTION_TO_2026_REALITY...",
+      "SYSTEM_READY."
+    ];
+
+    async function startBoot() {
+      const logContainer = document.getElementById('boot-log');
+      // Only play boot animation if it's a fresh session
+      if (sessionStorage.getItem('booted')) {
+        document.getElementById('boot-sequence').style.display = 'none';
+        return;
+      }
+
+      for (const log of bootLogs) {
+        const line = document.createElement('div');
+        line.innerText = `[OK] ${log}`;
+        logContainer.appendChild(line);
+        // Scroll to bottom as logs appear
+        window.scrollTo(0, document.body.scrollHeight);
+        await new Promise(r => setTimeout(r, 350));
+      }
+
+      setTimeout(() => {
+        document.getElementById('boot-sequence').classList.add('fade-out');
+        sessionStorage.setItem('booted', 'true');
+      }, 800);
     }
+
+    window.onload = () => {
+      startBoot();
+      if(!localStorage.getItem("my_gemini_key")){
+        const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
+        if(key) localStorage.setItem("my_gemini_key", key);
+      }
+    };
   </script>
 </body>
 </html>

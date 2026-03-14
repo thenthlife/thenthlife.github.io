@@ -83,6 +83,7 @@ function renderMessage(role, text, callback) {
             if (i < text.length) {
                 div.innerHTML += text[i++];
                 chat.scrollTop = chat.scrollHeight;
+                window.scrollTo(0, document.body.scrollHeight);
             } else {
                 clearInterval(interval);
                 if (callback) callback();
@@ -91,6 +92,7 @@ function renderMessage(role, text, callback) {
     } else {
         div.innerText = text;
         chat.scrollTop = chat.scrollHeight;
+        window.scrollTo(0, document.body.scrollHeight);
     }
 }
 
@@ -125,6 +127,7 @@ async function sendMessage() {
     if (oldChoices) oldChoices.remove();
 
     renderMessage("user", userText);
+    window.scrollTo(0, document.body.scrollHeight);
     document.getElementById("loading").classList.remove("hidden");
 
     const modeRules = MODE === "survival" 

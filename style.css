@@ -12,9 +12,12 @@ body {
   background-color: var(--bg-black);
   color: var(--matrix-green);
   margin: 0; padding: 0;
-  display: flex; justify-content: center; align-items: center;
-  min-height: 100vh; width: 100vw;
-  text-transform: uppercase; overflow: hidden;
+  display: flex; justify-content: center;
+  min-height: 100dvh; /* Use dynamic viewport height */
+  width: 100vw;
+  text-transform: uppercase;
+  overflow-x: hidden; /* Prevent sideways scrolling */
+  overflow-y: auto;   /* Allow vertical scrolling */
 }
 
 /* --- BOOT OVERLAY --- */
@@ -75,10 +78,13 @@ body {
 
 /* --- SIMULATION CONTAINER --- */
 .container {
-  width: 100%; max-width: 650px; margin: auto; background: var(--bg-black);
-  display: flex; flex-direction: column; height: 100vh;
-  border-left: 1px solid var(--dark-green); border-right: 1px solid var(--dark-green);
+  width: 100%; max-width: 650px; background: var(--bg-black);
+  display: flex; flex-direction: column; 
+  min-height: 100dvh; /* Changed from height: 100vh */
+  border-left: 1px solid var(--dark-green); 
+  border-right: 1px solid var(--dark-green);
   position: relative;
+  margin: auto;
 }
 
 header { padding: 15px; border-bottom: 1px solid var(--dark-green); display: flex; justify-content: space-between; align-items: center; }
@@ -95,8 +101,20 @@ header { padding: 15px; border-bottom: 1px solid var(--dark-green); display: fle
 }
 .choice-btn:hover { background: var(--matrix-green); color: #000; }
 
-.input-area { padding: 20px; border-top: 1px solid var(--dark-green); display: flex; gap: 10px; }
-input { flex: 1; background: transparent; border: 1px solid var(--dark-green); color: var(--matrix-green); padding: 12px; outline: none; font-family: inherit; }
+.input-area { 
+  padding: 15px; 
+  /* Fixes iPhone X "Home Bar" overlap */
+  padding-bottom: calc(15px + env(safe-area-inset-bottom)); 
+  border-top: 1px solid var(--dark-green); 
+  display: flex; gap: 10px; 
+  background: black;
+}
+
+input { 
+  flex: 1; background: transparent; border: 1px solid var(--dark-green); 
+  color: var(--matrix-green); padding: 12px; outline: none; font-family: inherit; 
+  font-size: 16px; /* CRITICAL: Stops iOS from zooming in and breaking scroll */
+}
 button { background: var(--dark-green); color: #fff; border: none; padding: 10px 20px; cursor: pointer; font-family: inherit; }
 
 #stats { padding: 10px; font-size: 0.8rem; border-bottom: 1px solid var(--dark-green); color: #fff; display: flex; justify-content: space-around; }

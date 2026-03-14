@@ -127,3 +127,33 @@ button { background: var(--dark-green); color: #fff; border: none; padding: 10px
 
 .hidden { display: none !important; }
 #loading { text-align: center; font-size: 0.7rem; opacity: 0.5; margin-bottom: 10px;}
+
+/* --- BOOT ANIMATION SYSTEM --- */
+
+/* 1. The Animation Keyframes */
+@keyframes bootUp {
+  0% { 
+    opacity: 0; 
+    filter: brightness(0) blur(10px); 
+    transform: scale(0.98); /* Slight zoom-in effect */
+  }
+  100% { 
+    opacity: 1; 
+    filter: brightness(1) blur(0px); 
+    transform: scale(1);
+  }
+}
+
+/* 2. Applying it to the wrapper */
+.app-portal {
+  animation: bootUp 1.8s ease-out forwards;
+  /* This ensures the animation only plays once per page load */
+  animation-iteration-count: 1;
+  /* Crucial for mobile performance */
+  will-change: opacity, filter; 
+}
+
+/* 3. Refined Scanline overlay (optional bonus) */
+.scanlines {
+  z-index: 1001; /* Keeps them above the fading content */
+}

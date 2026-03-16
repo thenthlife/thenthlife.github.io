@@ -1,32 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-<title>nᵗʰ Life // Free Roam</title>
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" href="icon-192.png">
-<meta name="theme-color" content="#10b981">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>nᵗʰ Life // Free Roam</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="theme-color" content="#10b981">
 </head>
 <body>
-<div class="container">
-<header>
-<h1>FREE_ROAM // NO_PHYSICS</h1>
-<div class="nav-cluster">
-<button onclick="location.href='index.html'">HOME</button>
-<button onclick="resetLife()" style="background: var(--death-red);">REBOOT</button>
-</div>
-</header>
-<div id="chat"></div>
-<div id="loading" class="hidden">STREAMING_DATA...</div>
-<div class="input-area">
-<input id="userInput" placeholder="COMMAND_INPUT..." onkeydown="if(event.key==='Enter') sendMessage()" />
-<button onclick="sendMessage()">EXECUTE</button>
-</div>
-</div>
-<script>const MODE = "free-roam";</script>
-<script src="app.js"></script>
+  <div class="scanlines"></div>
+  <div class="container">
+
+    <header>
+      <div class="logo">FREE_ROAM // NO_PHYSICS</div>
+      <div class="nav-cluster">
+        <button onclick="openSettings()">⚙ API</button>
+        <button onclick="location.href='index.html'">HOME</button>
+        <button onclick="resetLife()"
+          style="background:transparent; border-color:var(--death-red); color:var(--death-red);">
+          REBOOT
+        </button>
+      </div>
+    </header>
+
+    <div id="chat"></div>
+    <div id="loading" class="hidden">STREAMING_DATA...</div>
+
+    <div class="input-area">
+      <input
+        id="userInput"
+        placeholder="COMMAND_INPUT..."
+        onkeydown="if(event.key==='Enter') sendMessage()"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <button onclick="sendMessage()">EXECUTE</button>
+    </div>
+
+  </div>
+
+  <script>const MODE = "free-roam";</script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -11,54 +11,78 @@
   <meta name="theme-color" content="#10b981">
 </head>
 <body class="portal-page">
+
   <div id="boot-sequence" class="boot-overlay">
     <div id="boot-log"></div>
   </div>
 
   <div class="scanlines"></div>
-  
-<div class="app-portal">
-  <div class="portal-container">
-    <header class="portal-header">
-      <h1>THE n<sup>th</sup> LIFE</h1>
-      <p class="status-text">SYSTEM_READY // SELECT_TIMELINE</p>
-    </header>
 
-    <nav class="mode-select">
-      <a href="free-roam.html" class="mode-btn">
-        <div class="btn-number">01</div>
-        <div class="btn-content">
-          <span class="btn-title">FREE ROAM</span>
-          <span class="btn-desc">Unrestricted Reality Simulation</span>
+  <div class="app-portal">
+    <div class="portal-container">
+
+      <header class="portal-header">
+        <h1>THE n<sup>th</sup> LIFE</h1>
+        <p class="status-text">SYSTEM_READY // SELECT_TIMELINE</p>
+      </header>
+
+      <nav class="mode-select">
+
+        <!-- 01: FREE ROAM -->
+        <a href="free-roam.html" class="mode-btn">
+          <div class="btn-number">01</div>
+          <div class="btn-content">
+            <span class="btn-title">FREE ROAM</span>
+            <span class="btn-desc">Unrestricted Reality Simulation</span>
+          </div>
+        </a>
+
+        <!-- 02: SURVIVAL + sub-menu -->
+        <div class="survival-group">
+          <a href="2nd-life.html" class="mode-btn">
+            <div class="btn-number">02</div>
+            <div class="btn-content">
+              <span class="btn-title">2ND LIFE // SURVIVAL</span>
+              <span class="btn-desc">Hardcore Tactical Logic — Permadeath</span>
+            </div>
+          </a>
+          <div class="sub-menu">
+            <a href="notable-lives.html" class="sub-btn">
+              <span class="sub-btn-icon">◈</span>
+              <span>NOTABLE_LIVES</span>
+              <span class="sub-btn-label">Personal Archives</span>
+            </a>
+            <a href="#" class="sub-btn placeholder" onclick="return false;" title="Available in Phase 2">
+              <span class="sub-btn-icon">⬡</span>
+              <span>LEADERBOARDS</span>
+              <span class="sub-btn-label placeholder-tag">PHASE_2</span>
+            </a>
+          </div>
         </div>
-      </a>
 
-      <a href="2nd-life.html" class="mode-btn">
-        <div class="btn-number">02</div>
-        <div class="btn-content">
-          <span class="btn-title">2nd LIFE SURVIVAL</span>
-          <span class="btn-desc">Hardcore Tactical Logic (Permadeath)</span>
+        <!-- 03: MULTIPLAYER (placeholder) -->
+        <div class="mode-btn placeholder" onclick="return false;" title="Available in Phase 3">
+          <div class="btn-number">03</div>
+          <div class="btn-content">
+            <span class="btn-title">MULTIPLAYER</span>
+            <span class="btn-desc">Ad-Hoc Session Play — Competitive &amp; Co-op</span>
+            <span class="placeholder-tag">PHASE_3</span>
+          </div>
         </div>
-      </a>
 
-      <a href="notable-lives.html" class="mode-btn">
-        <div class="btn-number">03</div>
-        <div class="btn-content">
-          <span class="btn-title">NOTABLE LIVES</span>
-          <span class="btn-desc">Archived Community Data</span>
-        </div>
-      </a>
-    </nav>
+      </nav>
 
-    <footer class="portal-footer">
-      <a href="https://github.com/thenthlife/thenthlife.github.io/blob/main/README.md" target="_blank" class="manual-link">
-        [!] ACCESS_SYSTEM_MANUAL
-      </a>
-    </footer>
+      <footer class="portal-footer">
+        <a href="https://github.com/thenthlife/thenthlife.github.io/blob/main/README.md"
+           target="_blank" class="manual-link">
+          [!] ACCESS_SYSTEM_MANUAL
+        </a>
+      </footer>
+
+    </div>
   </div>
 
   <script>
-    // BOOT SEQUENCE LOGIC
     const bootLogs = [
       "INITIALIZING_QUANTUM_CORE...",
       "VERIFYING_NEURAL_LINK...",
@@ -71,34 +95,24 @@
 
     async function startBoot() {
       const logContainer = document.getElementById('boot-log');
-      // Only play boot animation if it's a fresh session
       if (sessionStorage.getItem('booted')) {
         document.getElementById('boot-sequence').style.display = 'none';
         return;
       }
-
       for (const log of bootLogs) {
         const line = document.createElement('div');
         line.innerText = `[OK] ${log}`;
         logContainer.appendChild(line);
-        // Scroll to bottom as logs appear
-        window.scrollTo(0, document.body.scrollHeight);
         await new Promise(r => setTimeout(r, 350));
       }
-
       setTimeout(() => {
         document.getElementById('boot-sequence').classList.add('fade-out');
         sessionStorage.setItem('booted', 'true');
       }, 800);
     }
 
-    window.onload = () => {
-      startBoot();
-      if(!localStorage.getItem("my_gemini_key")){
-        const key = prompt("CRITICAL: Enter Gemini API Key to initialize engine:");
-        if(key) localStorage.setItem("my_gemini_key", key);
-      }
-    };
+    window.onload = () => startBoot();
   </script>
+
 </body>
 </html>

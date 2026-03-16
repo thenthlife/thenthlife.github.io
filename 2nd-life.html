@@ -1,60 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>2ND_LIFE // SURVIVAL</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <meta name="theme-color" content="#10b981">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>2ND_LIFE // SURVIVAL</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="theme-color" content="#10b981">
 </head>
 <body>
-    <div class="scanlines"></div>
+  <div class="scanlines"></div>
+  <div class="container">
 
-    <div class="container">
-        <header>
-            <div class="logo">2ND_LIFE // SURVIVAL</div>
-            <div class="controls">
-                <button onclick="location.href='index.html'">HOME</button>
-                <button onclick="resetLife()" style="background: var(--death-red); color: white;">REBOOT</button>
-            </div>
-        </header>
+    <header>
+      <div class="logo">2ND_LIFE // SURVIVAL</div>
+      <div class="controls">
+        <button onclick="openSettings()">⚙ API</button>
+        <button onclick="location.href='index.html'">HOME</button>
+        <button onclick="resetLife()"
+          style="background:transparent; border-color:var(--death-red); color:var(--death-red);">
+          REBOOT
+        </button>
+      </div>
+    </header>
 
-        <div id="stats">
-            INITIALIZING_BIOMETRICS...
-        </div>
+    <div id="stats">INITIALIZING_BIOMETRICS...</div>
 
-        <div id="chat">
-            </div>
+    <div id="chat"></div>
 
-        <div id="loading" class="hidden">
-            <span class="pulse">>> ANALYZING_PROBABILITY_VECTORS...</span>
-        </div>
+    <div id="loading" class="hidden">ANALYZING_PROBABILITY_VECTORS...</div>
 
-        <div class="history-wrapper">
-            <div class="history-header" onclick="toggleHistory()" style="cursor: pointer; padding: 10px; border-top: 1px solid var(--dark-green); background: rgba(16, 185, 129, 0.05); font-size: 0.8rem;">
-                [+] HISTORICAL_RECORDS_LOG
-            </div>
-            <div id="history-content" class="hidden" style="max-height: 150px; overflow-y: auto; padding: 10px; font-size: 0.7rem; border-top: 1px solid var(--dark-green); opacity: 0.7;">
-                </div>
-        </div>
-
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="COMMAND_INPUT..." onkeydown="if(event.key==='Enter') sendMessage()">
-            <button onclick="sendMessage()">EXECUTE</button>
-        </div>
+    <div class="history-wrapper">
+      <div class="history-header" onclick="toggleHistory()">
+        <span>[+] HISTORICAL_RECORDS_LOG</span>
+        <span style="opacity:0.4; font-size:0.62rem">CLICK TO EXPAND</span>
+      </div>
+      <div id="history-content" class="hidden"></div>
     </div>
 
-    <div id="death-screen" class="hidden">
-        <h1>LIFE TERMINATED</h1>
+    <div class="input-area">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="COMMAND_INPUT..."
+        onkeydown="if(event.key==='Enter') sendMessage()"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <button onclick="sendMessage()">EXECUTE</button>
     </div>
 
-    <script>
-        // Set simulation mode for engine
-        const MODE = "survival";
-    </script>
-    <script src="app.js"></script>
+  </div>
+
+  <div id="death-screen" class="hidden"></div>
+
+  <script>const MODE = "survival";</script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -1,103 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>THE nᵗʰ LIFE // ARCHIVES</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <meta name="theme-color" content="#10b981">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>THE nᵗʰ LIFE // PERSONAL ARCHIVES</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="theme-color" content="#10b981">
 </head>
 <body>
-    <div class="scanlines"></div>
+  <div class="scanlines"></div>
+  <div class="container">
 
-    <div class="container">
-        <header>
-            <div class="logo">NOTABLE_LIVES // ARCHIVES</div>
-            <div class="controls">
-                <button onclick="location.href='index.html'">RETURN_TO_PORTAL</button>
-                <button onclick="clearArchives()" style="background: var(--death-red); color: white;">PURGE_DATA</button>
-            </div>
-        </header>
+    <header>
+      <div class="logo">PERSONAL_ARCHIVES</div>
+      <div class="controls">
+        <button onclick="location.href='index.html'">PORTAL</button>
+        <button onclick="clearArchives()"
+          style="background:transparent; border-color:var(--death-red); color:var(--death-red);">
+          PURGE_DATA
+        </button>
+      </div>
+    </header>
 
-        <div id="stats" style="text-align: center; justify-content: center;">
-            TOTAL_TIMELINES_TERMINATED: <span id="archive-count">0</span>
-        </div>
-
-        <div id="chat" style="padding: 10px;">
-            <table class="archive-table">
-                <thead>
-                    <tr>
-                        <th>DATE</th>
-                        <th>TIME</th>
-                        <th>CAUSE_OF_TERMINATION</th>
-                        <th>REP</th>
-                    </tr>
-                </thead>
-                <tbody id="archive-body">
-                    </tbody>
-            </table>
-        </div>
+    <div id="stats">
+      <div class="stat-item">
+        <span class="stat-label">TIMELINES TERMINATED</span>
+        <span class="stat-value" id="archive-count">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">PERSONAL BEST</span>
+        <span class="stat-value" id="personal-best">0M</span>
+      </div>
     </div>
 
-    <style>
-        .archive-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            color: var(--matrix-green);
-        }
-        .archive-table th {
-            text-align: left;
-            padding: 10px;
-            border-bottom: 2px solid var(--dark-green);
-            opacity: 0.8;
-        }
-        .archive-table td {
-            padding: 10px;
-            border-bottom: 1px solid rgba(16, 185, 129, 0.1);
-        }
-        .archive-table tr:hover {
-            background: rgba(16, 185, 129, 0.05);
-        }
-    </style>
+    <div id="chat" style="padding: 15px;">
+      <table class="archive-table">
+        <thead>
+          <tr>
+            <th>DATE</th>
+            <th>SURVIVED</th>
+            <th>$FINAL</th>
+            <th>REP</th>
+            <th>CAUSE_OF_TERMINATION</th>
+          </tr>
+        </thead>
+        <tbody id="archive-body"></tbody>
+      </table>
+    </div>
 
-    <script>
-        function loadArchives() {
-            const archives = JSON.parse(localStorage.getItem("notable_lives") || "[]");
-            const body = document.getElementById("archive-body");
-            const count = document.getElementById("archive-count");
-            
-            count.innerText = archives.length;
-            
-            // Sort by duration (best lives at top)
-            archives.sort((a, b) => b.duration - a.duration);
+  </div>
 
-            body.innerHTML = archives.map(entry => `
-                <tr>
-                    <td>${entry.date}</td>
-                    <td>${entry.duration}M</td>
-                    <td style="color: var(--death-red)">${entry.cause.toUpperCase()}</td>
-                    <td>${entry.rep > 0 ? '+' : ''}${entry.rep}</td>
-                </tr>
-            `).join("");
+  <script src="storage.js"></script>
+  <script>
+    function loadArchives() {
+      const archives = Storage.getArchives();
+      const best     = Storage.getBest();
 
-            if (archives.length === 0) {
-                body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; opacity: 0.5;">NO_RECORDS_FOUND // SURVIVE_FIRST</td></tr>';
-            }
-        }
+      document.getElementById("archive-count").textContent = archives.length;
+      document.getElementById("personal-best").textContent = best + "M";
 
-        function clearArchives() {
-            if (confirm("THIS WILL PERMANENTLY WIPE ALL ARCHIVED LIVES. PROCEED?")) {
-                localStorage.removeItem("notable_lives");
-                localStorage.removeItem("best_survival");
-                location.reload();
-            }
-        }
+      const body = document.getElementById("archive-body");
 
-        window.onload = loadArchives;
-    </script>
+      if (archives.length === 0) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="archive-empty">
+              NO_RECORDS_FOUND // SURVIVE_FIRST
+            </td>
+          </tr>`;
+        return;
+      }
+
+      // Sort: longest survival first
+      const sorted = [...archives].sort((a, b) => b.duration - a.duration);
+
+      body.innerHTML = sorted.map(entry => `
+        <tr>
+          <td style="opacity:0.55; font-size:0.7rem">${entry.date}</td>
+          <td>${entry.duration}M</td>
+          <td>$${entry.money ?? '—'}</td>
+          <td style="color:${entry.rep > 0 ? 'var(--matrix-green)' : entry.rep < 0 ? 'var(--death-red)' : 'inherit'}">
+            ${entry.rep > 0 ? '+' : ''}${entry.rep}
+          </td>
+          <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">
+            ${(entry.cause || 'UNKNOWN').toUpperCase()}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function clearArchives() {
+      if (confirm("PERMANENTLY WIPE ALL ARCHIVED LIVES AND PERSONAL BEST?\nTHIS CANNOT BE UNDONE.")) {
+        Storage.clearArchives();
+        location.reload();
+      }
+    }
+
+    window.onload = loadArchives;
+  </script>
 </body>
 </html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>THE nᵗʰ LIFE // OPERATOR WAITLIST</title>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="theme-color" content="#10b981">
+  <meta property="og:title" content="THE nᵗʰ LIFE // OPERATOR WAITLIST">
+  <meta property="og:description" content="An AI-driven brutalist life simulator. Join the founding operator list before public launch.">
+  <meta property="og:type" content="website">
+
+  <style>
+    :root {
+      --green:      #10b981;
+      --green-dim:  #064e3b;
+      --green-glow: rgba(16, 185, 129, 0.35);
+      --red:        #ef4444;
+      --amber:      #f59e0b;
+      --black:      #030a06;
+      --black-card: #060f08;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100dvh;
+      background: var(--black);
+      color: var(--green);
+      font-family: 'Courier New', Courier, monospace;
+      text-transform: uppercase;
+      overflow-x: hidden;
+      text-shadow: 0 0 8px var(--green-glow);
+    }
+
+    .scanlines {
+      position: fixed; inset: 0;
+      background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.18) 50%);
+      background-size: 100% 6px;
+      pointer-events: none; z-index: 1000;
+    }
+
+    .boot-overlay {
+      position: fixed; inset: 0; background: #000;
+      z-index: 9000; display: flex; flex-direction: column;
+      padding: 40px; font-size: 0.85rem;
+      gap: 8px; overflow: hidden; transition: opacity 1.2s ease;
+    }
+    .boot-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+    .page {
+      min-height: 100dvh; display: flex;
+      flex-direction: column; align-items: center;
+      padding: 0 20px 60px;
+      background: radial-gradient(ellipse at 50% 0%, #051a14 0%, var(--black) 65%);
+    }
+
+    .site-header {
+      width: 100%; max-width: 680px;
+      padding: 20px 0 15px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--green-dim); margin-bottom: 60px;
+    }
+    .site-header a {
+      font-size: 0.7rem; color: var(--green); text-decoration: none;
+      opacity: 0.5; transition: opacity 0.2s; letter-spacing: 1px;
+    }
+    .site-header a:hover { opacity: 1; }
+    .header-logo { font-size: 0.8rem; letter-spacing: 3px; }
+
+    .hero {
+      width: 100%; max-width: 680px; text-align: center;
+      margin-bottom: 50px;
+      animation: fadeUp 0.8s ease-out both; animation-delay: 0.2s;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero-eyebrow { font-size: 0.65rem; letter-spacing: 4px; opacity: 0.5; margin-bottom: 20px; }
+    .hero h1 {
+      font-size: clamp(1.8rem, 6vw, 3rem); letter-spacing: 6px; line-height: 1.2;
+      text-shadow: 0 0 30px var(--green-glow), 0 0 8px var(--green-glow); margin-bottom: 24px;
+    }
+    .hero h1 sup { font-size: 0.5em; vertical-align: super; }
+    .hero-desc {
+      font-size: 0.8rem; line-height: 1.9; opacity: 0.65;
+      max-width: 480px; margin: 0 auto 30px; letter-spacing: 0.5px;
+    }
+
+    .status-strip {
+      display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;
+      margin-bottom: 50px;
+      animation: fadeUp 0.8s ease-out both; animation-delay: 0.4s;
+    }
+    .status-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .status-label { font-size: 0.58rem; opacity: 0.4; letter-spacing: 1px; }
+    .status-value { font-size: 0.8rem; font-weight: bold; }
+    .status-value.live  { color: var(--green); }
+    .status-value.soon  { color: var(--amber); }
+    .status-value.later { opacity: 0.35; }
+
+    .form-card {
+      width: 100%; max-width: 520px;
+      border: 1px solid var(--green-dim); background: var(--black-card);
+      padding: 36px 32px; position: relative;
+      animation: fadeUp 0.8s ease-out both; animation-delay: 0.5s;
+    }
+    .form-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.6;
+    }
+    .form-title {
+      font-size: 0.75rem; letter-spacing: 4px; margin-bottom: 28px;
+      opacity: 0.8; padding-bottom: 16px; border-bottom: 1px solid var(--green-dim);
+    }
+
+    .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+    .field label { font-size: 0.62rem; letter-spacing: 1.5px; opacity: 0.55; }
+    .field .optional { font-size: 0.55rem; opacity: 0.35; margin-left: 8px; }
+
+    .field input, .field select {
+      background: rgba(0,0,0,0.6); border: 1px solid var(--green-dim);
+      color: var(--green); padding: 12px 14px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.82rem; text-transform: uppercase; outline: none; width: 100%;
+      transition: border-color 0.2s; -webkit-appearance: none; appearance: none; border-radius: 0;
+    }
+    .field input::placeholder { color: var(--green-dim); opacity: 1; text-shadow: none; }
+    .field input:focus, .field select:focus { border-color: var(--green); }
+    .field input.error { border-color: var(--red); }
+
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+      content: '▾'; position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%); pointer-events: none; font-size: 0.8rem; opacity: 0.5;
+    }
+    .field select option { background: #060f08; color: var(--green); }
+
+    .field-error { font-size: 0.6rem; color: var(--red); opacity: 0.9; letter-spacing: 1px; text-shadow: none; }
+
+    .api-error, .duplicate-note {
+      font-size: 0.65rem; padding: 10px 14px;
+      margin-bottom: 20px; line-height: 1.7;
+      text-shadow: none; display: none;
+    }
+    .api-error { color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .duplicate-note { color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+    .api-error.visible, .duplicate-note.visible { display: block; }
+
+    .submit-btn {
+      width: 100%; padding: 16px; background: transparent;
+      border: 1px solid var(--green); color: var(--green);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.85rem; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: background 0.2s, color 0.2s; margin-top: 8px;
+      text-shadow: 0 0 8px var(--green-glow);
+    }
+    .submit-btn:hover { background: var(--green); color: #000; text-shadow: none; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .form-note {
+      font-size: 0.58rem; opacity: 0.35; text-align: center;
+      margin-top: 16px; line-height: 1.8; letter-spacing: 0.5px;
+    }
+
+    .success-state {
+      display: none; flex-direction: column; align-items: center;
+      text-align: center; gap: 16px; padding: 20px 0;
+    }
+    .success-state.visible { display: flex; }
+    .success-icon { font-size: 2rem; text-shadow: 0 0 20px var(--green-glow); }
+    .success-title { font-size: 1rem; letter-spacing: 4px; }
+    .success-desc { font-size: 0.7rem; opacity: 0.55; line-height: 1.9; max-width: 320px; }
+    .success-id {
+      font-size: 0.65rem; color: var(--amber);
+      border: 1px solid rgba(245,158,11,0.3);
+      padding: 6px 16px; letter-spacing: 2px; text-shadow: none;
+    }
+
+    .perks {
+      width: 100%; max-width: 520px; margin-top: 40px;
+      border: 1px solid var(--green-dim);
+      animation: fadeUp 0.8s ease-out both; animation-delay: 0.65s;
+    }
+    .perks-header {
+      padding: 12px 20px; font-size: 0.65rem; letter-spacing: 3px; opacity: 0.6;
+      border-bottom: 1px solid var(--green-dim); background: rgba(16,185,129,0.03);
+    }
+    .perk-row {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 14px 20px; border-bottom: 1px solid rgba(6,78,59,0.4);
+      font-size: 0.72rem; line-height: 1.6;
+    }
+    .perk-row:last-child { border-bottom: none; }
+    .perk-icon { opacity: 0.7; flex-shrink: 0; margin-top: 1px; }
+    .perk-text { opacity: 0.7; }
+    .perk-text strong { color: var(--green); font-weight: normal; }
+
+    .site-footer {
+      margin-top: 60px; font-size: 0.6rem; opacity: 0.3;
+      text-align: center; letter-spacing: 1px; line-height: 2;
+    }
+    .site-footer a { color: inherit; text-decoration: none; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="scanlines"></div>
+  <div class="boot-overlay" id="boot"><div id="boot-log"></div></div>
+
+  <div class="page">
+
+    <header class="site-header">
+      <span class="header-logo">THE n<sup>th</sup> LIFE</span>
+      <a href="index.html">← RETURN TO PORTAL</a>
+    </header>
+
+    <section class="hero">
+      <p class="hero-eyebrow">// FOUNDING OPERATOR PROGRAM</p>
+      <h1>JOIN THE<br>WAITLIST</h1>
+      <p class="hero-desc">
+        The n<sup>th</sup> Life is an AI-driven brutalist life simulator.
+        No sugarcoating. No second chances. Every decision has weight.
+        The hosted pro version is coming — get in before it does.
+      </p>
+    </section>
+
+    <div class="status-strip">
+      <div class="status-item">
+        <span class="status-label">V0.1 GITHUB</span>
+        <span class="status-value live">● LIVE</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">LEADERBOARDS</span>
+        <span class="status-value soon">◌ PHASE 2</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">MULTIPLAYER</span>
+        <span class="status-value later">◌ PHASE 3</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">MODEL CORE</span>
+        <span class="status-value live">GEMINI 2.5</span>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-title">// OPERATOR_REGISTRATION</div>
+
+      <div class="api-error" id="api-error">
+        ERROR: REGISTRATION_FAILED // CHECK CONNECTION AND TRY AGAIN.
+      </div>
+      <div class="duplicate-note" id="duplicate-note">
+        SIGNAL_ALREADY_RECEIVED // THIS EMAIL IS ALREADY ON THE LIST. YOU ARE NOTED.
+      </div>
+
+      <form id="waitlist-form" novalidate>
+
+        <div class="field">
+          <label for="email">
+            EMAIL_ADDRESS <span style="color:var(--red); font-size:0.7rem">*</span>
+          </label>
+          <input
+            type="email" id="email" name="email"
+            placeholder="YOUR@EMAIL.COM" required
+            autocomplete="email" autocorrect="off" autocapitalize="off"
+          />
+          <span class="field-error hidden" id="email-error">INVALID_ADDRESS // REQUIRED</span>
+        </div>
+
+        <div class="field">
+          <label for="handle">
+            OPERATOR_HANDLE <span class="optional">// OPTIONAL</span>
+          </label>
+          <input
+            type="text" id="handle" name="handle"
+            placeholder="WHAT SHOULD WE CALL YOU..."
+            maxlength="32" autocorrect="off" autocapitalize="off"
+          />
+        </div>
+
+        <div class="field">
+          <label for="source">HOW DID YOU FIND US?</label>
+          <div class="select-wrapper">
+            <select id="source" name="source">
+              <option value="" disabled selected>SELECT_ORIGIN...</option>
+              <option value="friend-family">FRIEND / FAMILY</option>
+              <option value="github">GITHUB</option>
+              <option value="reddit">REDDIT</option>
+              <option value="other">OTHER</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="interest">WHAT DRAWS YOU IN?</label>
+          <div class="select-wrapper">
+            <select id="interest" name="interest">
+              <option value="" disabled selected>SELECT_VECTOR...</option>
+              <option value="free-roam">FREE ROAM // UNRESTRICTED</option>
+              <option value="survival">SURVIVAL // PERMADEATH</option>
+              <option value="multiplayer">MULTIPLAYER // COMING SOON</option>
+              <option value="all">ALL OF IT</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          [ REGISTER_AS_FOUNDING_OPERATOR ]
+        </button>
+
+        <p class="form-note">
+          No spam. No noise. One message when the pro version launches.<br>
+          Your data stays yours.
+        </p>
+
+      </form>
+
+      <div class="success-state" id="success-state">
+        <div class="success-icon">◈</div>
+        <div class="success-title">OPERATOR_REGISTERED</div>
+        <div class="success-desc">
+          You're on the list. Founding Operators receive full Pro access
+          at launch — no charge, no expiry. We'll reach out when it's time.
+        </div>
+        <div class="success-id" id="success-id">ID: --------</div>
+        <div class="success-desc" style="margin-top:8px">
+          In the meantime — the v0.1 is live on GitHub.<br>
+          Bring your own Gemini key and start surviving.
+        </div>
+        <a href="index.html" style="
+          margin-top:12px; font-size:0.72rem; color:var(--green);
+          text-decoration:none; opacity:0.6; transition:opacity 0.2s;"
+          onmouseover="this.style.opacity=1"
+          onmouseout="this.style.opacity=0.6"
+        >→ ENTER THE SIMULATION</a>
+      </div>
+
+    </div>
+
+    <div class="perks">
+      <div class="perks-header">// FOUNDING_OPERATOR_PRIVILEGES</div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>PRO ACCESS — NO CHARGE.</strong> Full hosted pro version, free. No API key required. No cooldowns.</span>
+      </div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>LOCKED PRICING.</strong> When paid tiers launch, your rate is frozen at launch price permanently.</span>
+      </div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>EXTENDED CONTEXT.</strong> 20-event narrative memory vs 5 on free tier. The AI remembers more. The world stays coherent longer.</span>
+      </div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>CLOUD ARCHIVES.</strong> Notable Lives synced across devices. Your run history survives browser clears.</span>
+      </div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>EARLY MULTIPLAYER.</strong> First access to ad-hoc session play when Phase 3 ships.</span>
+      </div>
+      <div class="perk-row">
+        <span class="perk-icon">◈</span>
+        <span class="perk-text"><strong>FOUNDING OPERATOR STATUS.</strong> Permanent designation in the leaderboard. You were here before it mattered.</span>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <div>THE nᵗʰ LIFE // V0.1 // SYSTEM_OPERATIONAL</div>
+      <div>MODEL_CORE: GEMINI_2.5_FLASH // CLIENT_SIDE_ONLY</div>
+      <div style="margin-top:8px">
+        <a href="index.html">PORTAL</a> &nbsp;·&nbsp;
+        <a href="https://github.com/thenthlife/thenthlife.github.io" target="_blank">GITHUB</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://czutbrcprcodkfzhjhna.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_4R_KxUufzCZnbHlSnc3DgQ_7-M_e4WC';
+
+    // ── BOOT ───────────────────────────────────────────────────────────────────
+    const bootLogs = [
+      "SCANNING_OPERATOR_DATABASE...",
+      "VERIFYING_CLEARANCE_LEVEL...",
+      "DECRYPTING_REGISTRATION_PROTOCOL...",
+      "FOUNDING_OPERATOR_PROGRAM: ACTIVE",
+      "ACCESS_GRANTED."
+    ];
+
+    async function startBoot() {
+      const log = document.getElementById('boot-log');
+      const overlay = document.getElementById('boot');
+      if (sessionStorage.getItem('booted')) { overlay.style.display = 'none'; return; }
+      for (const line of bootLogs) {
+        const el = document.createElement('div');
+        el.textContent = `[OK] ${line}`;
+        log.appendChild(el);
+        await new Promise(r => setTimeout(r, 300));
+      }
+      await new Promise(r => setTimeout(r, 500));
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.style.display = 'none', 1300);
+    }
+
+    // ── OPERATOR ID ────────────────────────────────────────────────────────────
+    function generateOperatorId() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let id = 'OP-';
+      for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+      return id;
+    }
+
+    // ── SUBMIT ─────────────────────────────────────────────────────────────────
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      // Reset states
+      document.getElementById('api-error').classList.remove('visible');
+      document.getElementById('duplicate-note').classList.remove('visible');
+      document.getElementById('email').classList.remove('error');
+      document.getElementById('email-error').classList.add('hidden');
+
+      const email    = document.getElementById('email').value.trim();
+      const handle   = document.getElementById('handle').value.trim();
+      const source   = document.getElementById('source').value;
+      const interest = document.getElementById('interest').value;
+
+      // Validate
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        document.getElementById('email').classList.add('error');
+        document.getElementById('email-error').classList.remove('hidden');
+        document.getElementById('email').focus();
+        return;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = '[ REGISTERING... ]';
+
+      const entry = {
+        id:       generateOperatorId(),
+        email,
+        handle:   handle   || null,
+        source:   source   || null,
+        interest: interest || null,
+        status:   'founding'
+      };
+
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'apikey':        SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer':        'return=minimal'
+          },
+          body: JSON.stringify(entry)
+        });
+
+        if (resp.status === 409) {
+          document.getElementById('duplicate-note').classList.add('visible');
+          btn.disabled = false;
+          btn.textContent = '[ REGISTER_AS_FOUNDING_OPERATOR ]';
+          return;
+        }
+
+        if (!resp.ok) throw new Error(`HTTP_${resp.status}`);
+
+        // Success
+        document.getElementById('waitlist-form').style.display = 'none';
+        document.getElementById('success-state').classList.add('visible');
+        document.getElementById('success-id').textContent = `ID: ${entry.id}`;
+
+      } catch (err) {
+        console.error('Waitlist error:', err);
+        document.getElementById('api-error').classList.add('visible');
+        btn.disabled = false;
+        btn.textContent = '[ REGISTER_AS_FOUNDING_OPERATOR ]';
+      }
+    }
+
+    window.onload = () => {
+      startBoot();
+      document.getElementById('waitlist-form').addEventListener('submit', handleSubmit);
+    };
+  </script>
+
+</body>
+</html>

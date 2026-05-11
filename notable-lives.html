@@ -20,7 +20,7 @@
         <button onclick="location.href='index.html'">PORTAL</button>
         <button onclick="clearArchives()"
           style="background:transparent; border-color:var(--death-red); color:var(--death-red);">
-          PURGE_DATA
+          PURGE_LOCAL
         </button>
       </div>
     </header>
@@ -28,20 +28,39 @@
     <div id="stats">
       <div class="stat-item">
         <span class="stat-label">TIMELINES TERMINATED</span>
-        <span class="stat-value" id="archive-count">0</span>
+        <span class="stat-value" id="archive-count">—</span>
       </div>
       <div class="stat-item">
         <span class="stat-label">PERSONAL BEST</span>
-        <span class="stat-value" id="personal-best">0M</span>
+        <span class="stat-value" id="personal-best">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">TOP SCORE</span>
+        <span class="stat-value" id="top-score">—</span>
       </div>
     </div>
 
     <div id="chat" style="padding: 15px;">
-      <table class="archive-table">
+
+      <div id="source-label" style="
+        font-size:0.6rem; opacity:0.35; padding: 0 0 10px;
+        letter-spacing:1px;
+      "></div>
+
+      <div id="loading-arc" style="
+        text-align:center; padding: 30px;
+        font-size:0.7rem; letter-spacing:2px;
+        animation: blink 1.2s step-end infinite;
+      ">
+        LOADING_TIMELINE_RECORDS...
+      </div>
+
+      <table class="archive-table" id="archive-table" style="display:none">
         <thead>
           <tr>
             <th>DATE</th>
-            <th>SURVIVED</th>
+            <th>SCORE</th>
+            <th>TURNS</th>
             <th>$FINAL</th>
             <th>REP</th>
             <th>CAUSE_OF_TERMINATION</th>
@@ -49,51 +68,93 @@
         </thead>
         <tbody id="archive-body"></tbody>
       </table>
+
     </div>
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-client.js"></script>
   <script src="storage.js"></script>
   <script>
-    function loadArchives() {
-      const archives = Storage.getArchives();
+    async function loadArchives() {
+      await ensureAnonymousSession();
+
+      // Try cloud first
+      let runs    = await Storage.getPersonalRuns();
+      let source  = 'CLOUD';
+
+      // Fall back to localStorage if cloud unavailable
+      if (runs === null) {
+        runs   = Storage.getArchives();
+        source = 'LOCAL';
+      }
+
+      document.getElementById('loading-arc').style.display = 'none';
+      document.getElementById('source-label').textContent =
+        `// DATA_SOURCE: ${source} — ${runs.length} RECORD${runs.length !== 1 ? 'S' : ''}`;
+
       const best     = Storage.getBest();
+      const topScore = runs.length > 0
+        ? Math.max(...runs.map(r => r.score || 0))
+        : 0;
 
-      document.getElementById("archive-count").textContent = archives.length;
-      document.getElementById("personal-best").textContent = best + "M";
+      document.getElementById('archive-count').textContent = runs.length;
+      document.getElementById('personal-best').textContent = best + ' TURNS';
+      document.getElementById('top-score').textContent     = topScore.toLocaleString();
 
-      const body = document.getElementById("archive-body");
+      const body  = document.getElementById('archive-body');
+      const table = document.getElementById('archive-table');
 
-      if (archives.length === 0) {
+      if (runs.length === 0) {
         body.innerHTML = `
           <tr>
-            <td colspan="5" class="archive-empty">
+            <td colspan="6" class="archive-empty">
               NO_RECORDS_FOUND // SURVIVE_FIRST
             </td>
           </tr>`;
+        table.style.display = 'table';
         return;
       }
 
-      // Sort: longest survival first
-      const sorted = [...archives].sort((a, b) => b.duration - a.duration);
+      // Sort by score descending
+      const sorted = [...runs].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-      body.innerHTML = sorted.map(entry => `
-        <tr>
-          <td style="opacity:0.55; font-size:0.7rem">${entry.date}</td>
-          <td>${entry.duration}M</td>
-          <td>$${entry.money ?? '—'}</td>
-          <td style="color:${entry.rep > 0 ? 'var(--matrix-green)' : entry.rep < 0 ? 'var(--death-red)' : 'inherit'}">
-            ${entry.rep > 0 ? '+' : ''}${entry.rep}
-          </td>
-          <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">
-            ${(entry.cause || 'UNKNOWN').toUpperCase()}
-          </td>
-        </tr>
-      `).join("");
+      body.innerHTML = sorted.map(entry => {
+        const date  = entry.created_at
+          ? new Date(entry.created_at).toLocaleDateString()
+          : (entry.date || '—');
+        const turns = entry.turns ?? entry.duration ?? '—';
+        const score = entry.score != null ? entry.score.toLocaleString() : '—';
+
+        return `
+          <tr>
+            <td style="opacity:0.55; font-size:0.7rem">${date}</td>
+            <td style="color:var(--matrix-green); font-weight:bold">${score}</td>
+            <td>${turns}</td>
+            <td>$${entry.money ?? '—'}</td>
+            <td style="color:${entry.reputation > 0 ? 'var(--matrix-green)'
+                              : entry.rep > 0      ? 'var(--matrix-green)'
+                              : entry.reputation < 0 || entry.rep < 0 ? 'var(--death-red)'
+                              : 'inherit'}">
+              ${entry.reputation != null
+                ? (entry.reputation > 0 ? '+' : '') + entry.reputation
+                : entry.rep != null
+                  ? (entry.rep > 0 ? '+' : '') + entry.rep
+                  : '—'}
+            </td>
+            <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">
+              ${(entry.cause || 'UNKNOWN').toUpperCase()}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      table.style.display = 'table';
     }
 
     function clearArchives() {
-      if (confirm("PERMANENTLY WIPE ALL ARCHIVED LIVES AND PERSONAL BEST?\nTHIS CANNOT BE UNDONE.")) {
+      if (confirm("PURGE ALL LOCAL ARCHIVE DATA?\nCloud records are preserved.\nTHIS CANNOT BE UNDONE.")) {
         Storage.clearArchives();
         location.reload();
       }

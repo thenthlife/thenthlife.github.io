@@ -1,8 +1,11 @@
 /**
- * nth Life Engine — app.js
+ * nth Life Engine — app.js // Phase 2
  * ─────────────────────────────────────────────────────────────────────────────
- * Requires: storage.js loaded before this script
- * Requires: const MODE declared before this script ("survival" | "free-roam")
+ * Requires (in this load order):
+ *   1. CDN: supabase-js
+ *   2. supabase-client.js
+ *   3. storage.js
+ *   4. const MODE declared per page
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -12,11 +15,16 @@ let life = Storage.getLife(MODE) || {
   summary: "",
   events: [],
   health: 100, money: 50, reputation: 0, danger: 0,
+  turns: 0,
   startTime: Date.now(),
+  lastSaved: Date.now(),
   current: MODE === "survival"
     ? "SIMULATION_START: You awaken in a hostile world. Define your existence."
     : "SIMULATION_START: Unrestricted reality. Define your existence."
 };
+
+// Ensure turns exists on saves from Phase 1 that predate this field
+if (typeof life.turns !== 'number') life.turns = 0;
 
 // ─── TIME ─────────────────────────────────────────────────────────────────────
 
@@ -41,10 +49,18 @@ function renderStats() {
   const hp   = life.health;
   const risk = life.danger;
   const best = Storage.getBest();
-  const mins = getSurvivalTime();
+  const turns = life.turns;
 
   const hpClass   = hp   < 25 ? "danger" : hp   < 50 ? "warn" : "";
   const riskClass = risk > 75 ? "danger" : risk > 40 ? "warn" : "";
+
+  // Live score preview
+  const liveScore = Storage.calculateScore({
+    turns,
+    money:      life.money,
+    reputation: life.reputation,
+    danger:     life.danger
+  });
 
   el.innerHTML = `
     <div class="stat-item">
@@ -66,12 +82,16 @@ function renderStats() {
       <div class="stat-bar"><div class="stat-bar-fill ${riskClass}" style="width:${risk}%"></div></div>
     </div>
     <div class="stat-item">
-      <span class="stat-label">TIME</span>
-      <span class="stat-value">${mins}M</span>
+      <span class="stat-label">TURNS</span>
+      <span class="stat-value">${turns}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">SCORE</span>
+      <span class="stat-value" style="color:var(--matrix-green)">${liveScore.toLocaleString()}</span>
     </div>
     <div class="stat-item">
       <span class="stat-label">BEST</span>
-      <span class="stat-value" style="opacity:0.45">${best}M</span>
+      <span class="stat-value" style="opacity:0.45">${best}</span>
     </div>
   `;
 }
@@ -96,18 +116,136 @@ function renderHistory() {
   container.scrollTop = container.scrollHeight;
 }
 
-// ─── ARCHIVE / DEATH RECORDING ────────────────────────────────────────────────
+// ─── DEATH / RUN SUBMISSION ───────────────────────────────────────────────────
 
-function recordDeath(cause) {
-  const duration = getSurvivalTime();
-  Storage.addArchiveEntry({
-    date:     new Date().toLocaleDateString(),
-    duration,
-    cause,
-    rep:      life.reputation,
-    money:    life.money
-  });
-  Storage.setBest(duration);
+async function handleDeath(cause) {
+  // Submit run to Supabase and get final score back
+  // saveRun also handles local archive and personal best
+  const finalScore = await Storage.saveRun(life, cause, life.turns);
+
+  // Clear cloud session — run is over
+  await Storage.clearCloudSession(MODE);
+
+  showDeathScreen(cause, finalScore);
+}
+
+function showDeathScreen(cause, finalScore) {
+  const ds = document.getElementById("death-screen");
+  if (!ds) return;
+  ds.classList.remove("hidden");
+  ds.innerHTML = `
+    <h1>LIFE_TERMINATED</h1>
+    <div class="death-stats">
+      <p>TURNS_SURVIVED: ${life.turns}</p>
+      <p>FINAL_SCORE: ${finalScore ? finalScore.toLocaleString() : '—'}</p>
+      <p>FINAL_REP: ${life.reputation > 0 ? '+' : ''}${life.reputation}</p>
+      <p>FINAL_FUNDS: $${life.money}</p>
+    </div>
+    <p class="death-cause">CAUSE: ${cause.toUpperCase()}</p>
+    <p style="opacity:0.4; font-size:0.65rem">TIMELINE_ARCHIVED // LEADERBOARD_UPDATED</p>
+    <button id="death-dismiss">[ REBOOT_TIMELINE ]</button>
+  `;
+  document.getElementById("death-dismiss").onclick = () => {
+    Storage.clearLife(MODE);
+    location.reload();
+  };
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+
+async function resetLife() {
+  if (confirm("TERMINATE TIMELINE? THIS CANNOT BE UNDONE.")) {
+    Storage.clearLife(MODE);
+    await Storage.clearCloudSession(MODE);
+    location.reload();
+  }
+}
+
+// ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
+
+function openSettings() {
+  const existing = document.getElementById("settings-panel");
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement("div");
+  panel.id = "settings-panel";
+  panel.className = "settings-panel";
+
+  const key = Storage.getApiKey();
+  const maskedKey = key
+    ? key.slice(0, 6) + "••••••••••••" + key.slice(-4)
+    : null;
+
+  const handle = Storage.getHandle();
+
+  panel.innerHTML = `
+    <h2>// SYSTEM_SETTINGS</h2>
+
+    <div class="settings-row">
+      <span class="settings-label">KEY STATUS</span>
+      <span class="settings-key-status" style="color:${key ? 'var(--matrix-green)' : 'var(--death-red)'}">
+        ${key ? '● ACTIVE: ' + maskedKey : '● NO KEY LOADED'}
+      </span>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">SET / UPDATE GEMINI API KEY</span>
+      <div class="settings-input-row">
+        <input type="password" id="key-input" placeholder="PASTE_KEY_HERE..." autocomplete="off" />
+        <button onclick="saveKeyFromPanel()">SAVE</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">OPERATOR HANDLE <span style="opacity:0.4; font-size:0.6rem">// SHOWN ON LEADERBOARD</span></span>
+      <div class="settings-input-row">
+        <input type="text" id="handle-input" placeholder="${handle || 'SET_YOUR_CALLSIGN...'}"
+               maxlength="32" autocorrect="off" autocapitalize="off" value="${handle || ''}" />
+        <button onclick="saveHandleFromPanel()">SAVE</button>
+      </div>
+    </div>
+
+    <div class="settings-warning">
+      ⚠ GEMINI KEY STORED IN LOCALSTORAGE — DO NOT USE ON SHARED DEVICES.
+      SERVER-SIDE KEY HANDLING ARRIVES IN PHASE 2B.
+    </div>
+
+    <div class="settings-actions">
+      <button onclick="document.getElementById('settings-panel').remove()">CLOSE</button>
+      <button class="btn-danger" onclick="clearKeyFromPanel()">CLEAR KEY</button>
+    </div>
+  `;
+
+  const container = document.querySelector(".container");
+  if (container) {
+    container.insertBefore(panel, container.firstChild.nextSibling);
+  } else {
+    document.body.appendChild(panel);
+  }
+}
+
+function saveKeyFromPanel() {
+  const input = document.getElementById("key-input");
+  if (!input || !input.value.trim()) return;
+  Storage.setApiKey(input.value.trim());
+  document.getElementById("settings-panel").remove();
+  openSettings();
+}
+
+function saveHandleFromPanel() {
+  const input = document.getElementById("handle-input");
+  if (!input || !input.value.trim()) return;
+  Storage.setHandle(input.value.trim());
+  document.getElementById("settings-panel").remove();
+  openSettings();
+}
+
+function clearKeyFromPanel() {
+  if (confirm("CLEAR API KEY FROM STORAGE?")) {
+    Storage.clearApiKey();
+    document.getElementById("settings-panel").remove();
+    openSettings();
+  }
 }
 
 // ─── RENDER MESSAGE ───────────────────────────────────────────────────────────
@@ -164,124 +302,15 @@ function renderChoices(actions) {
   document.getElementById("chat").appendChild(container);
 }
 
-// ─── DEATH SCREEN ─────────────────────────────────────────────────────────────
-
-function showDeathScreen(cause) {
-  const ds = document.getElementById("death-screen");
-  if (!ds) return;
-  ds.classList.remove("hidden");
-  ds.innerHTML = `
-    <h1>LIFE_TERMINATED</h1>
-    <div class="death-stats">
-      <p>SURVIVED: ${getSurvivalTime()} MINUTES</p>
-      <p>FINAL_REP: ${life.reputation > 0 ? '+' : ''}${life.reputation}</p>
-      <p>FINAL_FUNDS: $${life.money}</p>
-    </div>
-    <p class="death-cause">CAUSE: ${cause.toUpperCase()}</p>
-    <p style="opacity:0.4; font-size:0.65rem">TIMELINE_ARCHIVED</p>
-    <button id="death-dismiss">[ REBOOT_TIMELINE ]</button>
-  `;
-  document.getElementById("death-dismiss").onclick = () => {
-    Storage.clearLife(MODE);
-    location.reload();
-  };
-}
-
-// ─── RESET ────────────────────────────────────────────────────────────────────
-
-function resetLife() {
-  if (confirm("TERMINATE TIMELINE? THIS CANNOT BE UNDONE.")) {
-    Storage.clearLife(MODE);
-    location.reload();
-  }
-}
-
-// ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
-
-function openSettings() {
-  // Toggle: if already open, close it
-  const existing = document.getElementById("settings-panel");
-  if (existing) { existing.remove(); return; }
-
-  const panel = document.createElement("div");
-  panel.id = "settings-panel";
-  panel.className = "settings-panel";
-
-  const key = Storage.getApiKey();
-  const maskedKey = key
-    ? key.slice(0, 6) + "••••••••••••" + key.slice(-4)
-    : null;
-
-  panel.innerHTML = `
-    <h2>// SYSTEM_SETTINGS</h2>
-
-    <div class="settings-row">
-      <span class="settings-label">KEY STATUS</span>
-      <span class="settings-key-status" style="color:${key ? 'var(--matrix-green)' : 'var(--death-red)'}">
-        ${key ? '● ACTIVE: ' + maskedKey : '● NO KEY LOADED'}
-      </span>
-    </div>
-
-    <div class="settings-row">
-      <span class="settings-label">SET / UPDATE GEMINI API KEY</span>
-      <div class="settings-input-row">
-        <input type="password" id="key-input" placeholder="PASTE_KEY_HERE..." autocomplete="off" />
-        <button onclick="saveKeyFromPanel()">SAVE</button>
-      </div>
-    </div>
-
-    <div class="settings-warning">
-      ⚠ KEY STORED IN LOCALSTORAGE — VISIBLE TO ANY SCRIPT ON THIS PAGE.
-      DO NOT USE ON SHARED OR PUBLIC DEVICES.
-      SERVER-SIDE KEY HANDLING ARRIVES IN PHASE 2.
-    </div>
-
-    <div class="settings-actions">
-      <button onclick="document.getElementById('settings-panel').remove()">CLOSE</button>
-      <button class="btn-danger" onclick="clearKeyFromPanel()">CLEAR KEY</button>
-    </div>
-  `;
-
-  // Anchor inside .container so it slides down from the header
-  const container = document.querySelector(".container");
-  if (container) {
-    container.insertBefore(panel, container.firstChild.nextSibling);
-  } else {
-    document.body.appendChild(panel);
-  }
-}
-
-function saveKeyFromPanel() {
-  const input = document.getElementById("key-input");
-  if (!input || !input.value.trim()) return;
-  Storage.setApiKey(input.value.trim());
-  const panel = document.getElementById("settings-panel");
-  if (panel) panel.remove();
-  openSettings(); // reopen to show updated masked key
-}
-
-function clearKeyFromPanel() {
-  if (confirm("CLEAR API KEY FROM STORAGE?")) {
-    Storage.clearApiKey();
-    const panel = document.getElementById("settings-panel");
-    if (panel) panel.remove();
-    openSettings();
-  }
-}
-
 // ─── SEND MESSAGE / GEMINI CALL ───────────────────────────────────────────────
 
 async function sendMessage() {
-  const input   = document.getElementById("userInput");
+  const input    = document.getElementById("userInput");
   const userText = input.value.trim();
   const API_KEY  = Storage.getApiKey();
 
   if (!userText) return;
-
-  if (!API_KEY) {
-    openSettings();
-    return;
-  }
+  if (!API_KEY) { openSettings(); return; }
 
   input.value = "";
 
@@ -337,21 +366,17 @@ Rules:
     document.getElementById("loading").classList.add("hidden");
 
     if (!resp.ok) {
-      const errMsg = data?.error?.message || `API_ERROR_${resp.status}`;
-      renderMessage("ai", `ERROR: ${errMsg}`);
+      renderMessage("ai", `ERROR: ${data?.error?.message || `API_ERROR_${resp.status}`}`);
       return;
     }
 
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    // Strip accidental markdown fences before parsing
+    const raw     = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const cleaned = raw.replace(/```json|```/gi, "").trim();
 
     let parsed = null;
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      // Fallback: extract first JSON object from within the string
       const match = cleaned.match(/\{[\s\S]*\}/);
       if (match) {
         try { parsed = JSON.parse(match[0]); } catch { /* still null */ }
@@ -373,17 +398,26 @@ Rules:
     }
 
     clampStats();
-    life.current = parsed.scene || life.current;
+
+    // Increment turn counter (survival only)
+    if (MODE === "survival") life.turns += 1;
+
+    life.current  = parsed.scene || life.current;
+    life.lastSaved = Date.now();
     if (parsed.event) life.events.push(parsed.event);
+
+    // Persist locally
     Storage.saveLife(MODE, life);
+
+    // Sync to cloud (non-blocking)
+    if (MODE === "survival") Storage.syncSession(MODE, life);
 
     renderStats();
     renderHistory();
 
-    renderMessage("ai", parsed.scene || "...", () => {
+    renderMessage("ai", parsed.scene || "...", async () => {
       if (parsed.status === "DEAD" && MODE === "survival") {
-        recordDeath(parsed.event || "Unknown cause");
-        showDeathScreen(parsed.event || "Unknown cause");
+        await handleDeath(parsed.event || "Unknown cause");
       } else if (parsed.choices && parsed.choices.length > 0) {
         renderChoices(parsed.choices);
       }
@@ -397,7 +431,19 @@ Rules:
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
-window.onload = () => {
+window.onload = async () => {
+  // Initialise anonymous Supabase session silently
+  await ensureAnonymousSession();
+
+  // Attempt to load cloud session if newer than local
+  if (MODE === "survival") {
+    const cloudLife = await Storage.loadCloudSession(MODE);
+    if (cloudLife) {
+      life = cloudLife;
+      if (typeof life.turns !== 'number') life.turns = 0;
+    }
+  }
+
   if (!Storage.getApiKey()) openSettings();
   renderStats();
   renderHistory();

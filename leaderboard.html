@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>THE nᵗʰ LIFE // LEADERBOARD</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="theme-color" content="#10b981">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="container">
+
+    <header>
+      <div class="logo">LEADERBOARD // GLOBAL</div>
+      <div class="controls">
+        <button onclick="location.href='index.html'">PORTAL</button>
+        <button onclick="loadLeaderboard()" style="opacity:0.7">↻ REFRESH</button>
+      </div>
+    </header>
+
+    <div id="stats">
+      <div class="stat-item">
+        <span class="stat-label">TIMELINES ON RECORD</span>
+        <span class="stat-value" id="run-count">—</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">TOP SCORE</span>
+        <span class="stat-value" id="top-score">—</span>
+      </div>
+    </div>
+
+    <div id="chat" style="padding: 15px;">
+
+      <div id="loading-board" style="
+        text-align:center; padding: 40px;
+        font-size: 0.7rem; letter-spacing: 2px;
+        animation: blink 1.2s step-end infinite;
+      ">
+        FETCHING_GLOBAL_RECORDS...
+      </div>
+
+      <table class="archive-table" id="leaderboard-table" style="display:none">
+        <thead>
+          <tr>
+            <th>RANK</th>
+            <th>OPERATOR</th>
+            <th>SCORE</th>
+            <th>TURNS</th>
+            <th>$FINAL</th>
+            <th>REP</th>
+            <th>CAUSE</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="storage.js"></script>
+  <script>
+    async function loadLeaderboard() {
+      document.getElementById('loading-board').style.display = 'block';
+      document.getElementById('leaderboard-table').style.display = 'none';
+
+      await ensureAnonymousSession();
+      const runs = await Storage.getLeaderboard(100);
+
+      document.getElementById('loading-board').style.display = 'none';
+
+      const body  = document.getElementById('leaderboard-body');
+      const table = document.getElementById('leaderboard-table');
+      const runCount  = document.getElementById('run-count');
+      const topScore  = document.getElementById('top-score');
+
+      runCount.textContent = runs.length;
+      topScore.textContent = runs.length > 0 ? runs[0].score.toLocaleString() : '—';
+
+      if (runs.length === 0) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="7" class="archive-empty">
+              NO_RUNS_ON_RECORD // BE_THE_FIRST
+            </td>
+          </tr>`;
+        table.style.display = 'table';
+        return;
+      }
+
+      // Get current user ID to highlight their runs
+      const myId = await getCurrentUserId();
+
+      body.innerHTML = runs.map((run, i) => {
+        const rank     = i + 1;
+        const handle   = run.handle || 'UNNAMED';
+        const isTop3   = rank <= 3;
+        const rankColor = rank === 1 ? 'var(--warn-amber)'
+                        : rank === 2 ? 'rgba(192,192,192,0.9)'
+                        : rank === 3 ? 'rgba(205,127,50,0.9)'
+                        : 'inherit';
+        const date = new Date(run.created_at).toLocaleDateString();
+
+        return `
+          <tr style="${isTop3 ? 'background: rgba(16,185,129,0.04)' : ''}">
+            <td style="color:${rankColor}; font-weight:bold">${String(rank).padStart(2,'0')}</td>
+            <td style="color:var(--matrix-green)">${handle.toUpperCase()}</td>
+            <td style="color:var(--matrix-green); font-weight:bold">${run.score.toLocaleString()}</td>
+            <td>${run.turns}</td>
+            <td>$${run.money}</td>
+            <td style="color:${run.reputation > 0 ? 'var(--matrix-green)' : run.reputation < 0 ? 'var(--death-red)' : 'inherit'}">
+              ${run.reputation > 0 ? '+' : ''}${run.reputation}
+            </td>
+            <td style="color:var(--death-red); font-size:0.68rem; line-height:1.4">
+              ${(run.cause || 'UNKNOWN').toUpperCase().slice(0, 40)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      table.style.display = 'table';
+    }
+
+    window.onload = loadLeaderboard;
+  </script>
+</body>
+</html>

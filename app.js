@@ -55,11 +55,10 @@ function renderStats() {
   const riskClass = risk > 75 ? "danger" : risk > 40 ? "warn" : "";
 
   // Live score preview
-  const liveScore = Storage.calculateScore({
+  const liveScore = Storage.calculateDisplayScore({
     turns,
     money:      life.money,
-    reputation: life.reputation,
-    danger:     life.danger
+    reputation: life.reputation
   });
 
   el.innerHTML = `

@@ -57,7 +57,7 @@ const Storage = (() => {
     turns:      100,   // primary driver — longevity
     money:        2,   // secondary — wealth
     reputation:  50,   // tertiary — social standing
-    danger:     -25,   // penalty — risk at time of death
+    danger:      -5,   // penalty — risk at time of death
     // Future params: intelligence: 30, influence: 40, etc.
   };
 

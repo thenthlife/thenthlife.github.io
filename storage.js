@@ -78,7 +78,14 @@ const Storage = (() => {
 
     return Math.max(0, Math.round(raw));
   }
-
+function calculateDisplayScore(params) {
+  const { turns = 0, money = 0, reputation = 0 } = params;
+  return Math.max(0, Math.round(
+    (turns      * SCORE_WEIGHTS.turns) +
+    (money      * SCORE_WEIGHTS.money) +
+    (reputation * SCORE_WEIGHTS.reputation)
+  ));
+}
   // ── CLOUD: SUBMIT COMPLETED RUN ────────────────────────────────────────────
   // Called on death. Posts to Supabase `runs` table.
   // Falls back silently if Supabase is unavailable.
@@ -252,6 +259,7 @@ const Storage = (() => {
     getArchives, addArchiveEntry, clearArchives,
     // Phase 2 — scoring
     calculateScore,
+    calculateDisplayScore,
     SCORE_WEIGHTS,
     // Phase 2 — Supabase
     saveRun,

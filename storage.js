@@ -164,7 +164,7 @@ const Storage = (() => {
         .select('state, updated_at')
         .eq('user_id', userId)
         .eq('mode', mode)
-        .single();
+        .maybeSingle();
 
       if (error || !data) return null;
 

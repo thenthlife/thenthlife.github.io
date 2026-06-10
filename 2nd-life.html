@@ -9,11 +9,12 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <script src="theme.js"></script>
+  <script>loadSavedTheme();</script>
 </head>
 <body>
   <div class="scanlines"></div>
   <div class="container">
-
     <header>
       <div class="logo">2ND_LIFE // SURVIVAL</div>
       <div class="controls">
@@ -25,13 +26,9 @@
         </button>
       </div>
     </header>
-
     <div id="stats">INITIALIZING_BIOMETRICS...</div>
-
     <div id="chat"></div>
-
     <div id="loading" class="hidden">ANALYZING_PROBABILITY_VECTORS...</div>
-
     <div class="history-wrapper">
       <div class="history-header" onclick="toggleHistory()">
         <span>[+] HISTORICAL_RECORDS_LOG</span>
@@ -39,7 +36,6 @@
       </div>
       <div id="history-content" class="hidden"></div>
     </div>
-
     <div class="input-area">
       <input
         type="text" id="userInput"
@@ -49,12 +45,8 @@
       />
       <button onclick="sendMessage()">EXECUTE</button>
     </div>
-
   </div>
-
   <div id="death-screen" class="hidden"></div>
-
-  <!-- Load order is critical -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>const MODE = "survival";</script>
   <script src="supabase-client.js"></script>

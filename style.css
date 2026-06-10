@@ -435,5 +435,114 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
 }
 .app-portal { animation: bootUp 1.8s ease-out forwards; will-change: opacity, filter; width: 100%; display: flex; justify-content: center; }
 
+/* ─── INTRO SLIDES ───────────────────────────────────────────────────────────── */
+.slides-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.96);
+  z-index: 8000;
+  display: flex; justify-content: center; align-items: center;
+  padding: 20px;
+  animation: bootUp 0.4s ease-out forwards;
+}
+.slides-overlay.slides-fade-out {
+  opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+}
+.slides-container {
+  width: 100%; max-width: 500px;
+  display: flex; flex-direction: column;
+  gap: 40px;
+}
+.slide-content {
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center; gap: 16px;
+  border: 1px solid var(--primary-dim);
+  padding: 40px 30px;
+  background: var(--bg-black);
+  position: relative;
+  min-height: 280px; justify-content: center;
+}
+.slide-content::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0.5;
+}
+.slide-icon {
+  font-size: 2rem;
+  text-shadow: 0 0 20px var(--primary-glow);
+  line-height: 1;
+}
+.slide-title {
+  font-size: 1.1rem; letter-spacing: 6px;
+  text-shadow: 0 0 15px var(--primary-glow);
+}
+.slide-subtitle {
+  font-size: 0.65rem; letter-spacing: 3px; opacity: 0.5;
+  margin-top: -8px;
+}
+.slide-body {
+  font-size: 0.78rem; line-height: 1.9;
+  opacity: 0.75; max-width: 380px;
+  letter-spacing: 0.3px;
+}
+.slide-highlight {
+  font-size: 0.7rem; letter-spacing: 2px;
+  color: var(--primary);
+  border: 1px solid var(--primary-dim);
+  padding: 8px 20px;
+  margin-top: 4px;
+  text-shadow: 0 0 10px var(--primary-glow);
+}
+.slides-nav {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+  position: relative;
+}
+.slides-dots {
+  display: flex; gap: 10px; align-items: center;
+}
+.slide-dot {
+  width: 6px; height: 6px;
+  border: 1px solid var(--primary-dim);
+  cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.slide-dot.active {
+  background: var(--primary); border-color: var(--primary);
+  box-shadow: 0 0 6px var(--primary-glow);
+}
+.slides-actions {
+  display: flex; gap: 12px; align-items: center;
+}
+.slide-skip {
+  background: transparent; border: none;
+  color: var(--primary); opacity: 0.3;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.62rem; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer;
+  padding: 8px; transition: opacity 0.2s;
+  text-shadow: none;
+}
+.slide-skip:hover { opacity: 0.7; background: transparent; border: none; }
+.slide-next {
+  background: transparent; border: 1px solid var(--primary);
+  color: var(--primary); padding: 12px 28px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.slide-next:hover { background: var(--primary); color: #000; }
+.slide-back {
+  background: transparent; border: none;
+  color: var(--primary); opacity: 0.35;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.6rem; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer;
+  padding: 4px; transition: opacity 0.2s;
+  position: absolute; left: 0; bottom: -8px;
+  text-shadow: none;
+}
+.slide-back:hover { opacity: 0.7; background: transparent; border: none; }
+
 /* ─── UTILITIES ──────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }

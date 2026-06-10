@@ -9,7 +9,6 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
-  <script src="theme.js"></script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -46,10 +45,22 @@
     </div>
   </div>
   <div id="death-screen" class="hidden"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>const MODE = "survival";</script>
+  <script src="theme.js"></script>
+  <script src="slides.js"></script>
   <script src="supabase-client.js"></script>
   <script src="storage.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Show slides before game initialises
+    const _originalOnload = window.onload;
+    window.onload = async () => {
+      loadSavedTheme();
+      await new Promise(resolve => showSlides('survival', resolve));
+      if (_originalOnload) await _originalOnload();
+    };
+  </script>
 </body>
 </html>

@@ -9,11 +9,12 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <script src="theme.js"></script>
+  <script>loadSavedTheme();</script>
 </head>
 <body>
   <div class="scanlines"></div>
   <div class="container">
-
     <header>
       <div class="logo">FREE_ROAM // NO_PHYSICS</div>
       <div class="nav-cluster">
@@ -25,23 +26,17 @@
         </button>
       </div>
     </header>
-
     <div id="chat"></div>
     <div id="loading" class="hidden">STREAMING_DATA...</div>
-
     <div class="input-area">
       <input
-        id="userInput"
-        placeholder="COMMAND_INPUT..."
+        id="userInput" placeholder="COMMAND_INPUT..."
         onkeydown="if(event.key==='Enter') sendMessage()"
         autocomplete="off" autocorrect="off" spellcheck="false"
       />
       <button onclick="sendMessage()">EXECUTE</button>
     </div>
-
   </div>
-
-  <!-- Load order is critical -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>const MODE = "free-roam";</script>
   <script src="supabase-client.js"></script>

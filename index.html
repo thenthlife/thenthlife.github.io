@@ -9,14 +9,11 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
-  <!-- Apply theme before render to prevent flash -->
-  <script src="theme.js"></script>
 </head>
 <body class="portal-page">
-  <div id="boot-sequence" class="boot-overlay">
-    <div id="boot-log"></div>
-  </div>
+
   <div class="scanlines"></div>
+
   <div class="app-portal">
     <div class="portal-container">
       <header class="portal-header">
@@ -83,6 +80,9 @@
       </footer>
     </div>
   </div>
+
+  <!-- theme.js loaded at end of body so document.body exists -->
+  <script src="theme.js"></script>
   <script>
     const bootLogs = [
       "INITIALIZING_QUANTUM_CORE...",
@@ -94,33 +94,47 @@
       "SYSTEM_READY."
     ];
 
-    async function startBoot() {
-      const logContainer = document.getElementById('boot-log');
-      if (sessionStorage.getItem('booted')) {
-        document.getElementById('boot-sequence').style.display = 'none';
-        return;
-      }
-      for (const log of bootLogs) {
-        const line = document.createElement('div');
-        line.innerText = `[OK] ${log}`;
-        logContainer.appendChild(line);
+    async function runBootSequence() {
+      // Build overlay dynamically — never blocks initial render
+      const overlay = document.createElement('div');
+      overlay.className = 'boot-overlay';
+      const log = document.createElement('div');
+      log.id = 'boot-log';
+      overlay.appendChild(log);
+      document.body.appendChild(overlay);
+
+      for (const line of bootLogs) {
+        const el = document.createElement('div');
+        el.innerText = `[OK] ${line}`;
+        log.appendChild(el);
         await new Promise(r => setTimeout(r, 350));
       }
-      setTimeout(() => {
-        document.getElementById('boot-sequence').classList.add('fade-out');
-        sessionStorage.setItem('booted', 'true');
-      }, 800);
+
+      await new Promise(r => setTimeout(r, 800));
+      overlay.classList.add('fade-out');
+      sessionStorage.setItem('booted', 'true');
+      setTimeout(() => overlay.remove(), 1600);
     }
 
     window.onload = () => {
-  loadSavedTheme();
-  // Hide boot overlay immediately — theme selector handles the pre-game screen
-  const bootSeq = document.getElementById('boot-sequence');
-  if (sessionStorage.getItem('booted')) {
-    bootSeq.style.display = 'none';
-  }
-  initTheme(() => startBoot());
-};
+      // Apply saved theme immediately now that body exists
+      loadSavedTheme();
+
+      const hasTheme  = localStorage.getItem('nth_theme');
+      const hasBooted = sessionStorage.getItem('booted');
+
+      if (!hasTheme) {
+        // First ever visit — theme selector first, then boot
+        showThemeSelector(true, () => {
+          runBootSequence();
+        });
+      } else if (!hasBooted) {
+        // Returning visitor, first load this session — just boot
+        runBootSequence();
+      }
+      // Has theme + already booted this session — show portal directly
+    };
   </script>
+
 </body>
 </html>

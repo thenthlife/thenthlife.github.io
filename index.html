@@ -113,11 +113,14 @@
     }
 
     window.onload = () => {
-      loadSavedTheme();
-      // initTheme shows selector on first visit, then runs boot
-      // On return visits, goes straight to boot
-      initTheme(() => startBoot());
-    };
+  loadSavedTheme();
+  // Hide boot overlay immediately — theme selector handles the pre-game screen
+  const bootSeq = document.getElementById('boot-sequence');
+  if (sessionStorage.getItem('booted')) {
+    bootSeq.style.display = 'none';
+  }
+  initTheme(() => startBoot());
+};
   </script>
 </body>
 </html>

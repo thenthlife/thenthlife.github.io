@@ -431,6 +431,7 @@ Rules:
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 window.onload = async () => {
+  loadSavedTheme();
   // Initialise anonymous Supabase session silently
   await ensureAnonymousSession();
 

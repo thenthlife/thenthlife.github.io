@@ -57,7 +57,7 @@ const Storage = (() => {
     turns:      100,   // primary driver — longevity
     money:        2,   // secondary — wealth
     reputation:  50,   // tertiary — social standing
-    danger:      -5,   // penalty — risk at time of death
+    danger:     -25,   // penalty — risk at time of death
     // Future params: intelligence: 30, influence: 40, etc.
   };
 
@@ -78,17 +78,11 @@ const Storage = (() => {
 
     return Math.max(0, Math.round(raw));
   }
-function calculateDisplayScore(params) {
-  const { turns = 0, money = 0, reputation = 0 } = params;
-  return Math.max(0, Math.round(
-    (turns      * SCORE_WEIGHTS.turns) +
-    (money      * SCORE_WEIGHTS.money) +
-    (reputation * SCORE_WEIGHTS.reputation)
-  ));
-}
+
   // ── CLOUD: SUBMIT COMPLETED RUN ────────────────────────────────────────────
-  // Called on death. Posts to Supabase `runs` table.
-  // Falls back silently if Supabase is unavailable.
+  // Called on death.
+  // 1. Inserts full run into `runs` (complete history)
+  // 2. Upserts `leaderboard` — one row per user, updated only if score improves
   async function saveRun(lifeObj, cause, turns) {
     const score = calculateScore({
       turns,
@@ -98,27 +92,28 @@ function calculateDisplayScore(params) {
     });
 
     // Always save locally first
-    const localEntry = {
+    addArchiveEntry({
       date:     new Date().toLocaleDateString(),
       duration: turns,
       cause,
       rep:      lifeObj.reputation,
       money:    lifeObj.money,
       score
-    };
-    addArchiveEntry(localEntry);
+    });
     setBest(turns);
 
-    // Attempt cloud save
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return score; // no session — local only
+      if (!userId) return score;
 
-      const { error } = await supabaseClient
+      const handle = localStorage.getItem('nth_handle') || null;
+
+      // 1. Full run history
+      const { error: runError } = await supabaseClient
         .from('runs')
         .insert({
           user_id:    userId,
-          handle:     localStorage.getItem('nth_handle') || null,
+          handle,
           turns,
           money:      lifeObj.money,
           reputation: lifeObj.reputation,
@@ -128,7 +123,23 @@ function calculateDisplayScore(params) {
           events:     lifeObj.events || []
         });
 
-      if (error) console.warn('Cloud run save failed:', error.message);
+      if (runError) console.warn('Run insert failed:', runError.message);
+
+      // 2. Leaderboard — upsert, DB trigger only keeps it if score improves
+      const { error: lbError } = await supabaseClient
+        .from('leaderboard')
+        .upsert({
+          user_id:    userId,
+          handle,
+          turns,
+          money:      lifeObj.money,
+          reputation: lifeObj.reputation,
+          score,
+          cause,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (lbError) console.warn('Leaderboard upsert failed:', lbError.message);
 
     } catch (err) {
       console.warn('Cloud run save error:', err.message);
@@ -171,7 +182,7 @@ function calculateDisplayScore(params) {
         .select('state, updated_at')
         .eq('user_id', userId)
         .eq('mode', mode)
-        .maybeSingle();
+        .single();
 
       if (error || !data) return null;
 
@@ -207,12 +218,12 @@ function calculateDisplayScore(params) {
   }
 
   // ── CLOUD: LEADERBOARD ─────────────────────────────────────────────────────
-  // Fetches top N runs globally, ordered by score descending.
+  // Fetches top N entries from `leaderboard` table — one row per user, best score only.
   async function getLeaderboard(limit = 50) {
     try {
       const { data, error } = await supabaseClient
-        .from('runs')
-        .select('handle, turns, money, reputation, score, cause, created_at')
+        .from('leaderboard')
+        .select('handle, turns, money, reputation, score, cause, updated_at')
         .order('score', { ascending: false })
         .limit(limit);
 
@@ -226,11 +237,12 @@ function calculateDisplayScore(params) {
   }
 
   // ── CLOUD: PERSONAL RUNS ───────────────────────────────────────────────────
-  // Fetches all runs for the current anonymous user.
+  // Fetches all runs for the current anonymous user from `runs` table.
+  // Returns null on failure so caller can fall back to localStorage.
   async function getPersonalRuns() {
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return null; // null = fall back to localStorage
+      if (!userId) return null;
 
       const { data, error } = await supabaseClient
         .from('runs')
@@ -259,7 +271,6 @@ function calculateDisplayScore(params) {
     getArchives, addArchiveEntry, clearArchives,
     // Phase 2 — scoring
     calculateScore,
-    calculateDisplayScore,
     SCORE_WEIGHTS,
     // Phase 2 — Supabase
     saveRun,

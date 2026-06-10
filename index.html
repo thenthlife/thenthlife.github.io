@@ -9,6 +9,9 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <!-- Apply theme before render to prevent flash -->
+  <script src="theme.js"></script>
+  <script>loadSavedTheme();</script>
 </head>
 <body class="portal-page">
   <div id="boot-sequence" class="boot-overlay">
@@ -75,6 +78,9 @@
            target="_blank" class="manual-link">
           [!] ACCESS_SYSTEM_MANUAL
         </a>
+        <button class="theme-change-link" onclick="showThemeSelector(false)">
+          [◐] CHANGE_THEME
+        </button>
       </footer>
     </div>
   </div>
@@ -88,6 +94,7 @@
       "CONNECTING_TO_2026_REALITY...",
       "SYSTEM_READY."
     ];
+
     async function startBoot() {
       const logContainer = document.getElementById('boot-log');
       if (sessionStorage.getItem('booted')) {
@@ -105,7 +112,12 @@
         sessionStorage.setItem('booted', 'true');
       }, 800);
     }
-    window.onload = () => startBoot();
+
+    window.onload = () => {
+      // initTheme shows selector on first visit, then runs boot
+      // On return visits, goes straight to boot
+      initTheme(() => startBoot());
+    };
   </script>
 </body>
 </html>

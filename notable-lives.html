@@ -9,11 +9,12 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <script src="theme.js"></script>
+  <script>loadSavedTheme();</script>
 </head>
 <body>
   <div class="scanlines"></div>
   <div class="container">
-
     <header>
       <div class="logo">PERSONAL_ARCHIVES</div>
       <div class="controls">
@@ -24,7 +25,6 @@
         </button>
       </div>
     </header>
-
     <div id="stats">
       <div class="stat-item">
         <span class="stat-label">TIMELINES TERMINATED</span>
@@ -39,127 +39,75 @@
         <span class="stat-value" id="top-score">—</span>
       </div>
     </div>
-
     <div id="chat" style="padding: 15px;">
-
-      <div id="source-label" style="
-        font-size:0.6rem; opacity:0.35; padding: 0 0 10px;
-        letter-spacing:1px;
-      "></div>
-
-      <div id="loading-arc" style="
-        text-align:center; padding: 30px;
-        font-size:0.7rem; letter-spacing:2px;
-        animation: blink 1.2s step-end infinite;
-      ">
+      <div id="source-label" style="font-size:0.6rem; opacity:0.35; padding: 0 0 10px; letter-spacing:1px;"></div>
+      <div id="loading-arc" style="text-align:center; padding: 30px; font-size:0.7rem; letter-spacing:2px; animation: blink 1.2s step-end infinite;">
         LOADING_TIMELINE_RECORDS...
       </div>
-
       <table class="archive-table" id="archive-table" style="display:none">
         <thead>
           <tr>
-            <th>DATE</th>
-            <th>SCORE</th>
-            <th>TURNS</th>
-            <th>$FINAL</th>
-            <th>REP</th>
-            <th>CAUSE_OF_TERMINATION</th>
+            <th>DATE</th><th>SCORE</th><th>TURNS</th>
+            <th>$FINAL</th><th>REP</th><th>CAUSE_OF_TERMINATION</th>
           </tr>
         </thead>
         <tbody id="archive-body"></tbody>
       </table>
-
     </div>
-
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase-client.js"></script>
   <script src="storage.js"></script>
   <script>
     async function loadArchives() {
       await ensureAnonymousSession();
-
-      // Try cloud first
-      let runs    = await Storage.getPersonalRuns();
-      let source  = 'CLOUD';
-
-      // Fall back to localStorage if cloud unavailable
-      if (runs === null) {
-        runs   = Storage.getArchives();
-        source = 'LOCAL';
-      }
+      let runs = await Storage.getPersonalRuns();
+      let source = 'CLOUD';
+      if (runs === null) { runs = Storage.getArchives(); source = 'LOCAL'; }
 
       document.getElementById('loading-arc').style.display = 'none';
       document.getElementById('source-label').textContent =
         `// DATA_SOURCE: ${source} — ${runs.length} RECORD${runs.length !== 1 ? 'S' : ''}`;
 
-      const best     = Storage.getBest();
-      const topScore = runs.length > 0
-        ? Math.max(...runs.map(r => r.score || 0))
-        : 0;
-
+      const best = Storage.getBest();
+      const topScore = runs.length > 0 ? Math.max(...runs.map(r => r.score || 0)) : 0;
       document.getElementById('archive-count').textContent = runs.length;
       document.getElementById('personal-best').textContent = best + ' TURNS';
-      document.getElementById('top-score').textContent     = topScore.toLocaleString();
+      document.getElementById('top-score').textContent = topScore.toLocaleString();
 
-      const body  = document.getElementById('archive-body');
+      const body = document.getElementById('archive-body');
       const table = document.getElementById('archive-table');
 
       if (runs.length === 0) {
-        body.innerHTML = `
-          <tr>
-            <td colspan="6" class="archive-empty">
-              NO_RECORDS_FOUND // SURVIVE_FIRST
-            </td>
-          </tr>`;
-        table.style.display = 'table';
-        return;
+        body.innerHTML = `<tr><td colspan="6" class="archive-empty">NO_RECORDS_FOUND // SURVIVE_FIRST</td></tr>`;
+        table.style.display = 'table'; return;
       }
 
-      // Sort by score descending
       const sorted = [...runs].sort((a, b) => (b.score || 0) - (a.score || 0));
-
       body.innerHTML = sorted.map(entry => {
-        const date  = entry.created_at
-          ? new Date(entry.created_at).toLocaleDateString()
-          : (entry.date || '—');
+        const date = entry.created_at ? new Date(entry.created_at).toLocaleDateString() : (entry.date || '—');
         const turns = entry.turns ?? entry.duration ?? '—';
         const score = entry.score != null ? entry.score.toLocaleString() : '—';
-
+        const rep = entry.reputation ?? entry.rep ?? null;
+        const repColor = rep > 0 ? 'var(--primary)' : rep < 0 ? 'var(--death-red)' : 'inherit';
         return `
           <tr>
             <td style="opacity:0.55; font-size:0.7rem">${date}</td>
-            <td style="color:var(--matrix-green); font-weight:bold">${score}</td>
+            <td style="color:var(--primary); font-weight:bold">${score}</td>
             <td>${turns}</td>
             <td>$${entry.money ?? '—'}</td>
-            <td style="color:${entry.reputation > 0 ? 'var(--matrix-green)'
-                              : entry.rep > 0      ? 'var(--matrix-green)'
-                              : entry.reputation < 0 || entry.rep < 0 ? 'var(--death-red)'
-                              : 'inherit'}">
-              ${entry.reputation != null
-                ? (entry.reputation > 0 ? '+' : '') + entry.reputation
-                : entry.rep != null
-                  ? (entry.rep > 0 ? '+' : '') + entry.rep
-                  : '—'}
-            </td>
-            <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">
-              ${(entry.cause || 'UNKNOWN').toUpperCase()}
-            </td>
-          </tr>
-        `;
+            <td style="color:${repColor}">${rep != null ? (rep > 0 ? '+' : '') + rep : '—'}</td>
+            <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">${(entry.cause || 'UNKNOWN').toUpperCase()}</td>
+          </tr>`;
       }).join('');
-
       table.style.display = 'table';
     }
 
     function clearArchives() {
       if (confirm("PURGE ALL LOCAL ARCHIVE DATA?\nCloud records are preserved.\nTHIS CANNOT BE UNDONE.")) {
-        Storage.clearArchives();
-        location.reload();
+        Storage.clearArchives(); location.reload();
       }
     }
-
     window.onload = loadArchives;
   </script>
 </body>

@@ -7,12 +7,15 @@
  */
 
 const THEMES = {
-  terminal:  { name: 'TERMINAL',  sub: 'Default // CRT Green',    swatch: 'swatch-terminal'  },
-  void:      { name: 'VOID',      sub: 'Minimal // White',        swatch: 'swatch-void'      },
-  blood:     { name: 'BLOOD',     sub: 'Aggressive // Red',       swatch: 'swatch-blood'     },
-  amber:     { name: 'AMBER',     sub: 'Warm // Commodore',       swatch: 'swatch-amber'     },
-  ice:       { name: 'ICE',       sub: 'Cold // Sci-Fi',          swatch: 'swatch-ice'       },
-  synthwave: { name: 'SYNTHWAVE', sub: 'Neon // Retrowave',       swatch: 'swatch-synthwave' }
+  terminal:      { name: 'TERMINAL',      sub: 'Default // CRT Green',    swatch: 'swatch-terminal',      light: false },
+  void:          { name: 'VOID',          sub: 'Minimal // White',        swatch: 'swatch-void',          light: false },
+  blood:         { name: 'BLOOD',         sub: 'Aggressive // Red',       swatch: 'swatch-blood',         light: false },
+  amber:         { name: 'AMBER',         sub: 'Warm // Commodore',       swatch: 'swatch-amber',         light: false },
+  ice:           { name: 'ICE',           sub: 'Cold // Sci-Fi',          swatch: 'swatch-ice',           light: false },
+  synthwave:     { name: 'SYNTHWAVE',     sub: 'Neon // Retrowave',       swatch: 'swatch-synthwave',     light: false },
+  paper:         { name: 'PAPER',         sub: 'Clean // Typewriter',     swatch: 'swatch-paper',         light: true  },
+  'matrix-light':{ name: 'MATRIX LIGHT', sub: 'Inverted // Terminal',    swatch: 'swatch-matrix-light',  light: true  },
+  blueprint:     { name: 'BLUEPRINT',     sub: 'Technical // Blueprint',  swatch: 'swatch-blueprint',     light: true  }
 };
 
 const THEME_KEY = 'nth_theme';
@@ -23,11 +26,16 @@ const THEME_KEY = 'nth_theme';
  */
 function applyTheme(themeId) {
   const body = document.body;
-  // Remove all theme classes
+  // Remove all theme classes and light flag
   Object.keys(THEMES).forEach(t => body.classList.remove(`theme-${t}`));
-  // Apply new theme (terminal = no class = CSS :root defaults)
+  body.classList.remove('theme-light');
+  // Apply new theme
   if (themeId && themeId !== 'terminal') {
     body.classList.add(`theme-${themeId}`);
+  }
+  // Add structural light class for light themes
+  if (THEMES[themeId]?.light) {
+    body.classList.add('theme-light');
   }
 }
 
@@ -55,11 +63,24 @@ function loadSavedTheme() {
  * @param {function} onComplete — callback when theme is chosen
  */
 function showThemeSelector(firstVisit = false, onComplete = null) {
-  // Remove any existing selector
   const existing = document.getElementById('theme-overlay');
   if (existing) existing.remove();
 
-  const current = localStorage.getItem(THEME_KEY) || 'terminal';
+  const current     = localStorage.getItem(THEME_KEY) || 'terminal';
+  const darkThemes  = Object.entries(THEMES).filter(([, t]) => !t.light);
+  const lightThemes = Object.entries(THEMES).filter(([, t]) =>  t.light);
+
+  function renderGroup(entries) {
+    return entries.map(([id, t]) => `
+      <div class="theme-option ${id === current ? 'active' : ''}"
+           data-theme="${id}"
+           onclick="selectTheme('${id}')">
+        <div class="theme-swatch ${t.swatch}"></div>
+        <span class="theme-name">${t.name}</span>
+        <span class="theme-sub">${t.sub}</span>
+      </div>
+    `).join('');
+  }
 
   const overlay = document.createElement('div');
   overlay.id = 'theme-overlay';
@@ -68,23 +89,14 @@ function showThemeSelector(firstVisit = false, onComplete = null) {
   overlay.innerHTML = `
     <h2>// SELECT_TERMINAL_THEME</h2>
     <p>${firstVisit ? 'Choose your interface // Can be changed anytime in settings' : 'Current: ' + THEMES[current].name}</p>
-    <div class="theme-grid">
-      ${Object.entries(THEMES).map(([id, t]) => `
-        <div class="theme-option ${id === current ? 'active' : ''}"
-             data-theme="${id}"
-             onclick="selectTheme('${id}')">
-          <div class="theme-swatch ${t.swatch}"></div>
-          <span class="theme-name">${t.name}</span>
-          <span class="theme-sub">${t.sub}</span>
-        </div>
-      `).join('')}
-    </div>
+    <div class="theme-section-label">// DARK</div>
+    <div class="theme-grid">${renderGroup(darkThemes)}</div>
+    <div class="theme-section-label">// LIGHT</div>
+    <div class="theme-grid theme-grid-light">${renderGroup(lightThemes)}</div>
     ${!firstVisit ? `<button class="theme-skip" onclick="closeThemeSelector()">[ CLOSE ]</button>` : ''}
   `;
 
   document.body.appendChild(overlay);
-
-  // Store callback for when selection is made
   overlay._onComplete = onComplete;
 }
 

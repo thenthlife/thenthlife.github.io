@@ -55,10 +55,11 @@ function renderStats() {
   const riskClass = risk > 75 ? "danger" : risk > 40 ? "warn" : "";
 
   // Live score preview
-  const liveScore = Storage.calculateDisplayScore({
+  const liveScore = Storage.calculateScore({
     turns,
     money:      life.money,
-    reputation: life.reputation
+    reputation: life.reputation,
+    danger:     life.danger
   });
 
   el.innerHTML = `
@@ -301,7 +302,126 @@ function renderChoices(actions) {
   document.getElementById("chat").appendChild(container);
 }
 
-// ─── SEND MESSAGE / GEMINI CALL ───────────────────────────────────────────────
+// ─── RETRY CONFIG ─────────────────────────────────────────────────────────────
+
+const MAX_RETRIES   = 3;
+const RETRY_DELAY   = 2000; // ms between silent retries
+const RETRYABLE_CODES = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── LOADING TEXT CYCLE (keeps user engaged during retries) ───────────────────
+
+const LOADING_STATES = [
+  "ANALYZING_PROBABILITY_VECTORS...",
+  "RECALCULATING_TIMELINE...",
+  "SYNCHRONIZING_NEURAL_LINK...",
+  "PROCESSING_QUANTUM_STATE..."
+];
+let _loadingInterval = null;
+
+function startLoadingAnimation() {
+  const el = document.getElementById("loading");
+  if (!el) return;
+  el.classList.remove("hidden");
+  let i = 0;
+  el.textContent = LOADING_STATES[0];
+  _loadingInterval = setInterval(() => {
+    i = (i + 1) % LOADING_STATES.length;
+    el.textContent = LOADING_STATES[i];
+  }, 2000);
+}
+
+function stopLoadingAnimation() {
+  const el = document.getElementById("loading");
+  if (el) el.classList.add("hidden");
+  if (_loadingInterval) { clearInterval(_loadingInterval); _loadingInterval = null; }
+}
+
+// ─── GEMINI API CALL (single attempt) ─────────────────────────────────────────
+
+async function callGemini(prompt, apiKey) {
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    }
+  );
+
+  // Non-retryable auth errors — throw immediately
+  if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
+    const data = await resp.json();
+    throw { retryable: false, message: data?.error?.message || `API_ERROR_${resp.status}` };
+  }
+
+  // Retryable server errors
+  if (RETRYABLE_CODES.has(resp.status)) {
+    throw { retryable: true, message: `HTTP_${resp.status}` };
+  }
+
+  if (!resp.ok) {
+    const data = await resp.json();
+    throw { retryable: false, message: data?.error?.message || `API_ERROR_${resp.status}` };
+  }
+
+  const data = await resp.json();
+  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  if (!raw) throw { retryable: true, message: "EMPTY_RESPONSE" };
+
+  const cleaned = raw.replace(/```json|```/gi, "").trim();
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { parsed = JSON.parse(match[0]); } catch { /* still null */ }
+    }
+  }
+
+  // Malformed JSON is retryable — model occasionally wraps unexpectedly
+  if (!parsed) throw { retryable: true, message: "RESPONSE_MALFORMED" };
+
+  return parsed;
+}
+
+// ─── SHOW MANUAL RETRY BUTTON ─────────────────────────────────────────────────
+
+function showRetryButton(userText) {
+  // Remove any existing retry prompt
+  const existing = document.getElementById("retry-prompt");
+  if (existing) existing.remove();
+
+  const wrap = document.createElement("div");
+  wrap.id = "retry-prompt";
+  wrap.style.cssText = `
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px; opacity: 0.8;
+  `;
+
+  const msg = document.createElement("span");
+  msg.style.cssText = "font-size: 0.7rem; letter-spacing: 1px; opacity: 0.6;";
+  msg.textContent = "ENGINE_OFFLINE // ALL RETRIES EXHAUSTED";
+
+  const btn = document.createElement("button");
+  btn.style.cssText = "font-size: 0.7rem; padding: 8px 16px; letter-spacing: 1px;";
+  btn.textContent = "[ RETRY ]";
+  btn.onclick = () => {
+    wrap.remove();
+    document.getElementById("userInput").value = userText;
+    sendMessage();
+  };
+
+  wrap.appendChild(msg);
+  wrap.appendChild(btn);
+  document.getElementById("chat").appendChild(wrap);
+  document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
+}
+
+// ─── SEND MESSAGE / GEMINI CALL WITH SILENT RETRY ─────────────────────────────
 
 async function sendMessage() {
   const input    = document.getElementById("userInput");
@@ -316,9 +436,13 @@ async function sendMessage() {
   const old = document.querySelector(".choice-container");
   if (old) old.remove();
 
+  // Remove any previous retry prompt
+  const oldRetry = document.getElementById("retry-prompt");
+  if (oldRetry) oldRetry.remove();
+
   renderMessage("user", userText);
   window.scrollTo(0, document.body.scrollHeight);
-  document.getElementById("loading").classList.remove("hidden");
+  startLoadingAnimation();
 
   const modeRules = MODE === "survival"
     ? "Brutal survival simulation. Apply realistic, lethal consequences for dangerous decisions. Track all stats carefully."
@@ -351,87 +475,67 @@ Rules:
 - status: only "DEAD" if health reaches zero or a clearly fatal event occurs in survival mode. Otherwise "ALIVE".
 - For free-roam mode all stat deltas must be 0.`;
 
-  try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      }
-    );
+  // ── RETRY LOOP ───────────────────────────────────────────────────────────────
+  let parsed = null;
+  let lastError = null;
 
-    const data = await resp.json();
-    document.getElementById("loading").classList.add("hidden");
-
-    if (!resp.ok) {
-      renderMessage("ai", `ERROR: ${data?.error?.message || `API_ERROR_${resp.status}`}`);
-      return;
-    }
-
-    const raw     = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const cleaned = raw.replace(/```json|```/gi, "").trim();
-
-    let parsed = null;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { parsed = JSON.parse(match[0]); } catch { /* still null */ }
-      }
+      parsed = await callGemini(prompt, API_KEY);
+      break; // success — exit loop
+    } catch (err) {
+      lastError = err;
+      if (!err.retryable || attempt === MAX_RETRIES) break; // non-retryable or out of attempts
+      await sleep(RETRY_DELAY); // wait before next attempt, animation keeps running
     }
-
-    if (!parsed) {
-      renderMessage("ai", "ERROR: RESPONSE_MALFORMED // ENGINE_PARSE_FAILURE");
-      return;
-    }
-
-    // Apply stat deltas (survival only)
-    if (MODE === "survival" && parsed.stats) {
-      const s = parsed.stats;
-      if (typeof s.hp         === "number") life.health     += s.hp;
-      if (typeof s.money      === "number") life.money      += s.money;
-      if (typeof s.reputation === "number") life.reputation += s.reputation;
-      if (typeof s.danger     === "number") life.danger     += s.danger;
-    }
-
-    clampStats();
-
-    // Increment turn counter (survival only)
-    if (MODE === "survival") life.turns += 1;
-
-    life.current  = parsed.scene || life.current;
-    life.lastSaved = Date.now();
-    if (parsed.event) life.events.push(parsed.event);
-
-    // Persist locally
-    Storage.saveLife(MODE, life);
-
-    // Sync to cloud (non-blocking)
-    if (MODE === "survival") Storage.syncSession(MODE, life);
-
-    renderStats();
-    renderHistory();
-
-    renderMessage("ai", parsed.scene || "...", async () => {
-      if (parsed.status === "DEAD" && MODE === "survival") {
-        await handleDeath(parsed.event || "Unknown cause");
-      } else if (parsed.choices && parsed.choices.length > 0) {
-        renderChoices(parsed.choices);
-      }
-    });
-
-  } catch (err) {
-    document.getElementById("loading").classList.add("hidden");
-    renderMessage("ai", "ERROR: ENGINE_OFFLINE // CHECK_CONNECTION");
   }
+
+  stopLoadingAnimation();
+
+  // ── ALL RETRIES FAILED ────────────────────────────────────────────────────────
+  if (!parsed) {
+    showRetryButton(userText);
+    return;
+  }
+
+  // ── SUCCESS — apply result ────────────────────────────────────────────────────
+
+  // Apply stat deltas (survival only)
+  if (MODE === "survival" && parsed.stats) {
+    const s = parsed.stats;
+    if (typeof s.hp         === "number") life.health     += s.hp;
+    if (typeof s.money      === "number") life.money      += s.money;
+    if (typeof s.reputation === "number") life.reputation += s.reputation;
+    if (typeof s.danger     === "number") life.danger     += s.danger;
+  }
+
+  clampStats();
+
+  // Increment turn counter (survival only, on success only)
+  if (MODE === "survival") life.turns += 1;
+
+  life.current   = parsed.scene || life.current;
+  life.lastSaved = Date.now();
+  if (parsed.event) life.events.push(parsed.event);
+
+  Storage.saveLife(MODE, life);
+  if (MODE === "survival") Storage.syncSession(MODE, life);
+
+  renderStats();
+  renderHistory();
+
+  renderMessage("ai", parsed.scene || "...", async () => {
+    if (parsed.status === "DEAD" && MODE === "survival") {
+      await handleDeath(parsed.event || "Unknown cause");
+    } else if (parsed.choices && parsed.choices.length > 0) {
+      renderChoices(parsed.choices);
+    }
+  });
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 window.onload = async () => {
-  loadSavedTheme();
   // Initialise anonymous Supabase session silently
   await ensureAnonymousSession();
 

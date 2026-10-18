@@ -376,7 +376,20 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
   border-bottom: 1px solid var(--primary-dim);
   color: var(--primary); display: flex; justify-content: space-around;
   align-items: center; flex-wrap: wrap; gap: 8px;
-  background: var(--primary-bg); flex-shrink: 0;
+  /* Opaque: theme tint layered over the solid page colour so chat text
+     can't show through while scrolling underneath */
+  background: linear-gradient(var(--primary-bg), var(--primary-bg)), var(--bg-black);
+  flex-shrink: 0;
+  /* Trailing bar: stays pinned to the top while the chat scrolls */
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* Compact on phones so the pinned bar stays a single slim row */
+@media (max-width: 520px) {
+  #stats { padding: 8px 10px; gap: 4px; }
+  #stats .stat-item { min-width: 0; gap: 3px; }
+  #stats .stat-bar { width: 34px; }
+  #stats .stat-best { display: none; }
 }
 .stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; }
 .stat-label { font-size: 0.58rem; opacity: 0.55; letter-spacing: 0.5px; }

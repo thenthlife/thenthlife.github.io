@@ -89,7 +89,7 @@ function renderStats() {
       <span class="stat-label">SCORE</span>
       <span class="stat-value" style="color:var(--matrix-green)">${liveScore.toLocaleString()}</span>
     </div>
-    <div class="stat-item">
+    <div class="stat-item stat-best">
       <span class="stat-label">BEST</span>
       <span class="stat-value" style="opacity:0.45">${best}</span>
     </div>

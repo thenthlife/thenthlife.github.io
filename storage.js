@@ -8,6 +8,19 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+/**
+ * Escapes user- or AI-supplied text before it is placed into innerHTML templates.
+ * Use on EVERY dynamic string: handles, causes, event log entries, dates.
+ */
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const Storage = (() => {
 
   // ── API KEY ────────────────────────────────────────────────────────────────

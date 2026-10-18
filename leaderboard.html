@@ -9,7 +9,6 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
-  <script src="theme.js"></script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -47,6 +46,7 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="theme.js"></script>
   <script src="supabase-client.js"></script>
   <script src="storage.js"></script>
   <script>
@@ -73,7 +73,7 @@
         return `
           <tr style="${rank <= 3 ? 'background: var(--primary-bg)' : ''}">
             <td style="color:${rankColor}; font-weight:bold">${String(rank).padStart(2,'0')}</td>
-            <td style="color:var(--primary)">${(run.handle || 'UNNAMED').toUpperCase()}</td>
+            <td style="color:var(--primary)">${escapeHTML((run.handle || 'UNNAMED').toUpperCase())}</td>
             <td style="color:var(--primary); font-weight:bold">${run.score.toLocaleString()}</td>
             <td>${run.turns}</td>
             <td>$${run.money}</td>
@@ -81,13 +81,13 @@
               ${run.reputation > 0 ? '+' : ''}${run.reputation}
             </td>
             <td style="color:var(--death-red); font-size:0.68rem; line-height:1.4">
-              ${(run.cause || 'UNKNOWN').toUpperCase().slice(0,40)}
+              ${escapeHTML((run.cause || 'UNKNOWN').toUpperCase().slice(0,40))}
             </td>
           </tr>`;
       }).join('');
       table.style.display = 'table';
     }
-    window.onload = () => { loadSavedTheme(); loadLeaderboard(); }
+    window.onload = () => { loadSavedTheme(); loadLeaderboard(); };
   </script>
 </body>
 </html>

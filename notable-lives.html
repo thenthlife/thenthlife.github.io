@@ -9,7 +9,6 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
-  <script src="theme.js"></script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -55,6 +54,7 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="theme.js"></script>
   <script src="supabase-client.js"></script>
   <script src="storage.js"></script>
   <script>
@@ -91,12 +91,12 @@
         const repColor = rep > 0 ? 'var(--primary)' : rep < 0 ? 'var(--death-red)' : 'inherit';
         return `
           <tr>
-            <td style="opacity:0.55; font-size:0.7rem">${date}</td>
+            <td style="opacity:0.55; font-size:0.7rem">${escapeHTML(date)}</td>
             <td style="color:var(--primary); font-weight:bold">${score}</td>
             <td>${turns}</td>
             <td>$${entry.money ?? '—'}</td>
             <td style="color:${repColor}">${rep != null ? (rep > 0 ? '+' : '') + rep : '—'}</td>
-            <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">${(entry.cause || 'UNKNOWN').toUpperCase()}</td>
+            <td style="color:var(--death-red); font-size:0.7rem; line-height:1.4">${escapeHTML((entry.cause || 'UNKNOWN').toUpperCase())}</td>
           </tr>`;
       }).join('');
       table.style.display = 'table';
@@ -107,7 +107,7 @@
         Storage.clearArchives(); location.reload();
       }
     }
-    window.onload = () => { loadSavedTheme(); loadArchives(); }
+    window.onload = () => { loadSavedTheme(); loadArchives(); };
   </script>
 </body>
 </html>

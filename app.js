@@ -111,7 +111,7 @@ function renderHistory() {
     return;
   }
   container.innerHTML = life.events
-    .map((e, i) => `<div class="log-entry">[${String(i + 1).padStart(2, '0')}] ${e}</div>`)
+    .map((e, i) => `<div class="log-entry">[${String(i + 1).padStart(2, '0')}] ${escapeHTML(e)}</div>`)
     .join("");
   container.scrollTop = container.scrollHeight;
 }
@@ -141,7 +141,7 @@ function showDeathScreen(cause, finalScore) {
       <p>FINAL_REP: ${life.reputation > 0 ? '+' : ''}${life.reputation}</p>
       <p>FINAL_FUNDS: $${life.money}</p>
     </div>
-    <p class="death-cause">CAUSE: ${cause.toUpperCase()}</p>
+    <p class="death-cause">CAUSE: ${escapeHTML(cause.toUpperCase())}</p>
     <p style="opacity:0.4; font-size:0.65rem">TIMELINE_ARCHIVED // LEADERBOARD_UPDATED</p>
     <button id="death-dismiss">[ REBOOT_TIMELINE ]</button>
   `;
@@ -199,9 +199,16 @@ function openSettings() {
     <div class="settings-row">
       <span class="settings-label">OPERATOR HANDLE <span style="opacity:0.4; font-size:0.6rem">// SHOWN ON LEADERBOARD</span></span>
       <div class="settings-input-row">
-        <input type="text" id="handle-input" placeholder="${handle || 'SET_YOUR_CALLSIGN...'}"
-               maxlength="32" autocorrect="off" autocapitalize="off" value="${handle || ''}" />
+        <input type="text" id="handle-input" placeholder="${escapeHTML(handle) || 'SET_YOUR_CALLSIGN...'}"
+               maxlength="32" autocorrect="off" autocapitalize="off" value="${escapeHTML(handle)}" />
         <button onclick="saveHandleFromPanel()">SAVE</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">INTERFACE THEME</span>
+      <div class="settings-input-row">
+        <button onclick="document.getElementById('settings-panel').remove(); showThemeSelector(false)">[◐] CHANGE_THEME</button>
       </div>
     </div>
 
@@ -342,7 +349,7 @@ function stopLoadingAnimation() {
 
 async function callGemini(prompt, apiKey) {
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

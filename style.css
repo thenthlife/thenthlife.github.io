@@ -266,7 +266,7 @@ body.theme-synthwave .scanlines {
 .btn-title { display: block; font-size: 1.1rem; font-weight: bold; }
 .btn-desc  { display: block; font-size: 0.7rem; opacity: 0.6; margin-top: 6px; }
 .mode-btn:hover {
-  background: var(--primary); color: #000;
+  background: var(--primary); color: var(--bg-black);
   transform: scale(1.03); box-shadow: 0 0 20px var(--primary-glow);
 }
 .mode-btn:hover .btn-number { background: rgba(0,0,0,0.15); border-right-color: rgba(0,0,0,0.2); }
@@ -348,7 +348,7 @@ header {
   transition: 0.2s; font-family: 'Courier New', Courier, monospace;
   text-transform: uppercase; text-align: left; line-height: 1.4;
 }
-.choice-btn:hover { background: var(--primary); color: #000; }
+.choice-btn:hover { background: var(--primary); color: var(--bg-black); }
 
 /* ─── INPUT AREA ─────────────────────────────────────────────────────────────── */
 .input-area {
@@ -359,7 +359,7 @@ header {
 input {
   flex: 1; background: transparent; border: 1px solid var(--primary-dim);
   color: var(--primary); padding: 12px; outline: none;
-  font-family: 'Courier New', Courier, monospace; font-size: 16px;
+  font-family: 'Courier New', Courier, monospace; font-size: max(16px, 1rem);
 }
 input::placeholder { color: var(--primary-dim); opacity: 1; }
 button {
@@ -368,7 +368,7 @@ button {
   font-family: 'Courier New', Courier, monospace; font-size: 0.8rem;
   text-transform: uppercase; transition: 0.2s; flex-shrink: 0;
 }
-button:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+button:hover { background: var(--primary); color: var(--bg-black); border-color: var(--primary); }
 
 /* ─── STATS BAR ──────────────────────────────────────────────────────────────── */
 #stats {
@@ -431,7 +431,7 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
 .settings-warning { font-size: 0.62rem; color: var(--warn-amber); border: 1px solid rgba(245,158,11,0.25); padding: 10px 12px; line-height: 1.7; opacity: 0.85; }
 .settings-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-danger { background: transparent; border: 1px solid var(--death-red); color: var(--death-red); }
-.btn-danger:hover { background: var(--death-red); color: #000; border-color: var(--death-red); }
+.btn-danger:hover { background: var(--death-red); color: var(--bg-black); border-color: var(--death-red); }
 
 /* ─── THEME SELECTOR OVERLAY ─────────────────────────────────────────────────── */
 .theme-overlay {
@@ -543,7 +543,7 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
   padding: 12px 32px; cursor: pointer; font-family: 'Courier New', Courier, monospace;
   font-size: 0.8rem; text-transform: uppercase; transition: 0.2s; letter-spacing: 2px; margin-top: 8px;
 }
-#death-dismiss:hover { background: var(--death-red); color: #000; }
+#death-dismiss:hover { background: var(--death-red); color: var(--bg-black); }
 
 /* ─── NOTABLE LIVES / LEADERBOARD TABLE ─────────────────────────────────────── */
 .archive-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; color: var(--primary); }
@@ -655,7 +655,7 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
   text-transform: uppercase; cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.slide-next:hover { background: var(--primary); color: #000; }
+.slide-next:hover { background: var(--primary); color: var(--bg-black); }
 .slide-back {
   background: transparent; border: none;
   color: var(--primary); opacity: 0.35;
@@ -670,3 +670,84 @@ button:hover { background: var(--primary); color: #000; border-color: var(--prim
 
 /* ─── UTILITIES ──────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
+
+
+/* ─── SETTINGS OVERLAY ───────────────────────────────────────────────────────── */
+.settings-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: var(--bg-black);
+  overflow-y: auto; overscroll-behavior: contain;
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 20px 16px;
+  animation: bootUp 0.25s ease-out forwards;
+}
+.settings-box {
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 16px;
+  border: 1px solid var(--primary-dim);
+  padding: 22px 20px; margin: auto 0;
+}
+.settings-head { display: flex; justify-content: space-between; align-items: center; }
+.settings-head h2 { margin: 0; font-size: 0.85rem; letter-spacing: 4px; opacity: 0.9; }
+.settings-close { padding: 6px 12px; }
+.settings-section-label {
+  font-size: 0.58rem; letter-spacing: 3px; opacity: 0.45;
+  border-top: 1px solid var(--primary-dim); padding-top: 14px;
+}
+.settings-note { font-size: 0.58rem; opacity: 0.45; letter-spacing: 1px; }
+.settings-theme-name { flex: 1; align-self: center; font-size: 0.8rem; letter-spacing: 2px; }
+.settings-reset {
+  background: transparent; border: 1px dashed var(--primary-dim);
+  font-size: 0.62rem; letter-spacing: 1px; opacity: 0.75;
+}
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg-btn {
+  flex: 1 1 auto; background: transparent;
+  border: 1px solid var(--primary-dim); color: var(--primary);
+  padding: 9px 10px; font-size: 0.7rem; letter-spacing: 1px;
+}
+.seg-btn.active {
+  background: var(--primary); border-color: var(--primary);
+  color: var(--bg-black); text-shadow: none;
+}
+.seg-btn:not(.active):hover { background: var(--primary-subtle); color: var(--primary); border-color: var(--primary-dim); }
+
+/* Portal corner button */
+.corner-settings {
+  position: fixed; top: 14px; right: 14px; z-index: 50;
+  padding: 8px 12px; font-size: 0.8rem; background: var(--bg-card);
+}
+
+/* ─── DISPLAY PREFERENCE HOOKS (set on <html> by settings.js) ────────────────── */
+html { --text-scale: 1; }
+
+/* Narrative case: story text only (UI chrome stays uppercase) */
+html[data-case="normal"] .ai-message,
+html[data-case="normal"] .user-message { text-transform: none; }
+
+/* Scanlines & glow off */
+html[data-fx="off"] .scanlines { display: none; }
+html[data-fx="off"] * { text-shadow: none !important; }
+
+/* Text size: the stats bar scales at most ~10% so it can't swallow the screen */
+#stats .stat-value { font-size: calc(0.85rem * min(1, 1.1 / var(--text-scale))); }
+#stats .stat-label { font-size: calc(0.58rem * min(1, 1.1 / var(--text-scale))); }
+
+/* Large text: choices go single-column, tables scroll sideways */
+html[data-size="large"]  .choice-container,
+html[data-size="xlarge"] .choice-container { grid-template-columns: 1fr; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll .archive-table { min-width: 480px; }
+
+/* Typewriter: tap-to-skip affordance */
+.ai-message.typing { cursor: pointer; }
+.ai-message.typing::after { content: '▌'; animation: blink 1s step-end infinite; }
+
+/* Honour the device's reduced-motion setting */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

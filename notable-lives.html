@@ -9,6 +9,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <script src="settings.js"></script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -16,6 +17,7 @@
     <header>
       <div class="logo">PERSONAL_ARCHIVES</div>
       <div class="controls">
+        <button onclick="openSettings()" aria-label="Settings">⚙</button>
         <button onclick="location.href='index.html'">PORTAL</button>
         <button onclick="clearArchives()"
           style="background:transparent; border-color:var(--death-red); color:var(--death-red);">
@@ -42,7 +44,7 @@
       <div id="loading-arc" style="text-align:center; padding: 30px; font-size:0.7rem; letter-spacing:2px; animation: blink 1.2s step-end infinite;">
         LOADING_TIMELINE_RECORDS...
       </div>
-      <table class="archive-table" id="archive-table" style="display:none">
+      <div class="table-scroll"><table class="archive-table" id="archive-table" style="display:none">
         <thead>
           <tr>
             <th>DATE</th><th>SCORE</th><th>TURNS</th>
@@ -50,7 +52,7 @@
           </tr>
         </thead>
         <tbody id="archive-body"></tbody>
-      </table>
+      </table></div>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

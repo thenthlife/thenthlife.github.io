@@ -161,101 +161,9 @@ async function resetLife() {
   }
 }
 
-// ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
-
-function openSettings() {
-  const existing = document.getElementById("settings-panel");
-  if (existing) { existing.remove(); return; }
-
-  const panel = document.createElement("div");
-  panel.id = "settings-panel";
-  panel.className = "settings-panel";
-
-  const key = Storage.getApiKey();
-  const maskedKey = key
-    ? key.slice(0, 6) + "••••••••••••" + key.slice(-4)
-    : null;
-
-  const handle = Storage.getHandle();
-
-  panel.innerHTML = `
-    <h2>// SYSTEM_SETTINGS</h2>
-
-    <div class="settings-row">
-      <span class="settings-label">KEY STATUS</span>
-      <span class="settings-key-status" style="color:${key ? 'var(--matrix-green)' : 'var(--death-red)'}">
-        ${key ? '● ACTIVE: ' + maskedKey : '● NO KEY LOADED'}
-      </span>
-    </div>
-
-    <div class="settings-row">
-      <span class="settings-label">SET / UPDATE GEMINI API KEY</span>
-      <div class="settings-input-row">
-        <input type="password" id="key-input" placeholder="PASTE_KEY_HERE..." autocomplete="off" />
-        <button onclick="saveKeyFromPanel()">SAVE</button>
-      </div>
-    </div>
-
-    <div class="settings-row">
-      <span class="settings-label">OPERATOR HANDLE <span style="opacity:0.4; font-size:0.6rem">// SHOWN ON LEADERBOARD</span></span>
-      <div class="settings-input-row">
-        <input type="text" id="handle-input" placeholder="${escapeHTML(handle) || 'SET_YOUR_CALLSIGN...'}"
-               maxlength="32" autocorrect="off" autocapitalize="off" value="${escapeHTML(handle)}" />
-        <button onclick="saveHandleFromPanel()">SAVE</button>
-      </div>
-    </div>
-
-    <div class="settings-row">
-      <span class="settings-label">INTERFACE THEME</span>
-      <div class="settings-input-row">
-        <button onclick="document.getElementById('settings-panel').remove(); showThemeSelector(false)">[◐] CHANGE_THEME</button>
-      </div>
-    </div>
-
-    <div class="settings-warning">
-      ⚠ GEMINI KEY STORED IN LOCALSTORAGE — DO NOT USE ON SHARED DEVICES.
-      SERVER-SIDE KEY HANDLING ARRIVES IN PHASE 2B.
-    </div>
-
-    <div class="settings-actions">
-      <button onclick="document.getElementById('settings-panel').remove()">CLOSE</button>
-      <button class="btn-danger" onclick="clearKeyFromPanel()">CLEAR KEY</button>
-    </div>
-  `;
-
-  const container = document.querySelector(".container");
-  if (container) {
-    container.insertBefore(panel, container.firstChild.nextSibling);
-  } else {
-    document.body.appendChild(panel);
-  }
-}
-
-function saveKeyFromPanel() {
-  const input = document.getElementById("key-input");
-  if (!input || !input.value.trim()) return;
-  Storage.setApiKey(input.value.trim());
-  document.getElementById("settings-panel").remove();
-  openSettings();
-}
-
-function saveHandleFromPanel() {
-  const input = document.getElementById("handle-input");
-  if (!input || !input.value.trim()) return;
-  Storage.setHandle(input.value.trim());
-  document.getElementById("settings-panel").remove();
-  openSettings();
-}
-
-function clearKeyFromPanel() {
-  if (confirm("CLEAR API KEY FROM STORAGE?")) {
-    Storage.clearApiKey();
-    document.getElementById("settings-panel").remove();
-    openSettings();
-  }
-}
-
 // ─── RENDER MESSAGE ───────────────────────────────────────────────────────────
+// AI text uses the typewriter at the speed chosen in Settings.
+// Tapping a message while it types finishes it instantly.
 
 function renderMessage(role, text, callback) {
   const chat = document.getElementById("chat");
@@ -265,23 +173,51 @@ function renderMessage(role, text, callback) {
   div.className = `message ${role === "ai" ? "ai-message" : "user-message"}`;
   chat.appendChild(div);
 
-  if (role === "ai") {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < text.length) {
-        div.textContent += text[i++];
-        chat.scrollTop = chat.scrollHeight;
-        window.scrollTo(0, document.body.scrollHeight);
-      } else {
-        clearInterval(interval);
-        if (callback) callback();
-      }
-    }, 15);
-  } else {
-    div.textContent = text;
+  const scrollDown = () => {
     chat.scrollTop = chat.scrollHeight;
     window.scrollTo(0, document.body.scrollHeight);
+  };
+
+  if (role !== "ai") {
+    div.textContent = text;
+    scrollDown();
+    return;
   }
+
+  const delay = Settings.typeDelay();
+
+  // Instant mode: no animation at all
+  if (delay === 0) {
+    div.textContent = text;
+    scrollDown();
+    if (callback) callback();
+    return;
+  }
+
+  let i = 0;
+  let finished = false;
+  div.classList.add("typing");
+
+  const finish = () => {
+    if (finished) return;      // guards against click + interval both firing
+    finished = true;
+    clearInterval(timer);
+    div.classList.remove("typing");
+    div.textContent = text;
+    scrollDown();
+    if (callback) callback();
+  };
+
+  const timer = setInterval(() => {
+    if (i < text.length) {
+      div.textContent += text[i++];
+      scrollDown();
+    } else {
+      finish();
+    }
+  }, delay);
+
+  div.addEventListener("click", finish);
 }
 
 // ─── RENDER CHOICES ───────────────────────────────────────────────────────────

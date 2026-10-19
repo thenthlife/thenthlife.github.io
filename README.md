@@ -37,7 +37,7 @@ Sub-pages:
 
 ## 03 // PLAYER GUIDE
 
-1. **THEME:** on first visit, choose an interface theme. Change it any time from the portal footer or the in-game ⚙ settings panel.
+1. **THEME:** on first visit, choose an interface theme. Change it any time from ⚙ Settings (corner button on the portal, header button everywhere else).
 2. **INTRO SLIDES:** each mode opens with a short swipeable briefing (arrow keys on desktop). Use SKIP to bypass.
 3. **INITIALIZE:** define your existence — identity, location, situation.
 4. **THE TYPEWRITER:** wait for the response to finish streaming; choices appear when it completes.
@@ -61,6 +61,21 @@ Nine themes, chosen on first visit and stored per device.
 | SYNTHWAVE (neon retrowave) | |
 
 Themes are CSS variable sets in `style.css`. Light themes additionally use a shared `.theme-light` class for structural overrides (no text glow, lighter scanlines, light overlays).
+
+### Settings (⚙)
+
+One overlay, available on every page. Preferences are stored per device in `nth_settings` (the theme keeps its own `nth_theme` key).
+
+| Setting | Options |
+|---------|---------|
+| Interface theme | any of the 9 themes |
+| Text size | Small / Default / Large / XL (the stats bar is capped so it never swallows the screen; choices go single-column at Large+) |
+| Narrative text | Uppercase / Sentence case (story text only, UI stays uppercase) |
+| Scanlines & glow | On / Off |
+| Typewriter speed | Normal / Fast / Instant — tap a message while it types to skip it |
+| Gemini API key, operator handle | managed here |
+
+Devices set to "reduce motion" default to the instant typewriter, and animations are minimised.
 
 ---
 
@@ -86,6 +101,7 @@ waitlist.html         — Founding Operator registration (Supabase)
 style.css             — All styles and theme definitions
 theme.js              — Theme engine and selector
 slides.js             — Mode intro slides
+settings.js           — Shared settings overlay (display prefs, API key, handle)
 storage.js            — Persistence layer + escapeHTML helper
 supabase-client.js    — Supabase init + anonymous auth
 app.js                — Game engine
@@ -97,7 +113,7 @@ manifest.json         — PWA manifest
 ## 07 // INSTALLATION
 
 1. Clone the repository and deploy to **GitHub Pages** (or any static host).
-2. Open the site, click **⚙ API**, and paste your **Gemini API Key** ([aistudio.google.com](https://aistudio.google.com)).
+2. Open the site, click **⚙ SETTINGS**, and paste your **Gemini API Key** ([aistudio.google.com](https://aistudio.google.com)).
 3. Optionally set an **Operator Handle** in the same panel.
 
 ### Self-hosting the backend (Supabase)

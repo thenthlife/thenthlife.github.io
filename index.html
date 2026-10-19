@@ -9,10 +9,12 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#10b981">
+  <script src="settings.js"></script>
 </head>
 <body class="portal-page">
 
   <div class="scanlines"></div>
+  <button class="corner-settings" onclick="openSettings()" aria-label="Settings">⚙</button>
 
   <div class="app-portal">
     <div class="portal-container">
@@ -74,9 +76,6 @@
            target="_blank" class="manual-link">
           [!] ACCESS_SYSTEM_MANUAL
         </a>
-        <button class="theme-change-link" onclick="showThemeSelector(false)">
-          [◐] CHANGE_THEME
-        </button>
       </footer>
     </div>
   </div>

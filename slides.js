@@ -51,7 +51,7 @@ const SLIDES = {
       icon: "▲",
       title: "HOW TO SURVIVE",
       subtitle: "Tactical Realism",
-      body: "Think before you act. The 4 generated choices are contextually safe options. Custom commands carry more risk — and more reward. Resources are finite. Enemies are real. The AI will not spare you.",
+      body: "Think before you act. The 4 generated choices are contextually safe options. Custom commands carry more risk — and more reward. Resources are finite. Enemies are real. The AI is not scripted: no two timelines unfold alike, and the same action can end differently every time.",
       highlight: "THERE IS NO RELOAD."
     }
   ]

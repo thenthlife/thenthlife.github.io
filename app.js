@@ -247,7 +247,9 @@ function renderChoices(actions) {
 
 // ─── RETRY CONFIG ─────────────────────────────────────────────────────────────
 
-const MAX_RETRIES   = 3;
+// Single place to change the model. Google retires/re-routes model IDs often.
+const GEMINI_MODEL  = "gemini-3.6-flash";
+const MAX_RETRIES   = 5;
 const RETRY_DELAY   = 2000; // ms between silent retries
 const RETRYABLE_CODES = new Set([429, 500, 502, 503, 504]);
 
@@ -285,13 +287,18 @@ function stopLoadingAnimation() {
 
 async function callGemini(prompt, apiKey) {
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     }
   );
+
+  // Model removed or not offered to this key — retrying can never fix this
+  if (resp.status === 404) {
+    throw { retryable: false, code: "MODEL_UNAVAILABLE", message: `${GEMINI_MODEL} NOT FOUND` };
+  }
 
   // Non-retryable auth errors — throw immediately
   if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
@@ -333,7 +340,7 @@ async function callGemini(prompt, apiKey) {
 
 // ─── SHOW MANUAL RETRY BUTTON ─────────────────────────────────────────────────
 
-function showRetryButton(userText) {
+function showRetryButton(userText, err) {
   // Remove any existing retry prompt
   const existing = document.getElementById("retry-prompt");
   if (existing) existing.remove();
@@ -347,7 +354,15 @@ function showRetryButton(userText) {
 
   const msg = document.createElement("span");
   msg.style.cssText = "font-size: 0.7rem; letter-spacing: 1px; opacity: 0.6;";
-  msg.textContent = "ENGINE_OFFLINE // ALL RETRIES EXHAUSTED";
+  if (err && err.code === "MODEL_UNAVAILABLE") {
+    msg.textContent = "MODEL_UNAVAILABLE // THIS GEMINI MODEL IS NOT OFFERED TO YOUR KEY — GAME UPDATE NEEDED";
+  } else if (err && err.message === "HTTP_429") {
+    msg.textContent = "RATE_LIMITED // YOUR GEMINI KEY HIT ITS QUOTA — WAIT A MINUTE THEN RETRY";
+  } else if (err && err.retryable === false) {
+    msg.textContent = ("REQUEST_REJECTED // " + String(err.message || "UNKNOWN")).slice(0, 140) + " — CHECK ⚙ SETTINGS";
+  } else {
+    msg.textContent = "ENGINE_OFFLINE // ALL RETRIES EXHAUSTED";
+  }
 
   const btn = document.createElement("button");
   btn.style.cssText = "font-size: 0.7rem; padding: 8px 16px; letter-spacing: 1px;";
@@ -437,7 +452,7 @@ Rules:
 
   // ── ALL RETRIES FAILED ────────────────────────────────────────────────────────
   if (!parsed) {
-    showRetryButton(userText);
+    showRetryButton(userText, lastError);
     return;
   }
 

@@ -1,6 +1,6 @@
 # THE nᵗʰ LIFE // SIMULATION ENGINE
 
-The nᵗʰ Life is a brutalist, AI-driven life simulator designed for 2026 tactical realism. It runs in the browser using the Gemini 2.5 Flash API to generate logical, non-sugarcoated consequences for every player action.
+The nᵗʰ Life is a brutalist, AI-driven life simulator designed for 2026 tactical realism. It runs in the browser using the Gemini Flash API (currently `gemini-3.6-flash`) to generate logical, non-sugarcoated consequences for every player action.
 
 ---
 
@@ -82,8 +82,10 @@ Devices set to "reduce motion" default to the instant typewriter, and animations
 ## 05 // TECHNICAL MECHANICS
 
 - **JSON Response Engine:** each turn the model returns a structured object — `scene`, `event`, `stats`, `choices`, `status` — so stat deltas, choices, and death detection are isolated and reliable. Markdown fences are stripped; a regex fallback extracts JSON if needed.
-- **Silent Retry:** up to 3 attempts per input, 2s apart, for 429/5xx, empty, or malformed responses. Auth and bad-request errors (400/401/403) are never retried. The turn counter and stats only change on success.
+- **Silent Retry:** up to 5 attempts per input, 2s apart, for 429/5xx, empty, or malformed responses. Auth and bad-request errors (400/401/403) are never retried. The turn counter and stats only change on success.
 - **Score Formula:** `(turns × 100) + (money × 2) + (reputation × 50) − (danger × 5)`. Weights live in one object (`SCORE_WEIGHTS`) in `storage.js`, so rebalancing or adding a stat is a single edit. The live in-run score omits the danger penalty; the final score at death includes it.
+- **Non-deterministic by design:** the AI is the referee, not a script. The same action can play out differently in every timeline, which is why no two runs feel alike. Fairness means the same starting stats, the same rules, and no tampering, not identical outcomes.
+- **Model setting:** the model ID is one constant (`GEMINI_MODEL` in `app.js`) because Google retires and re-routes model IDs often. A removed model shows a clear `MODEL_UNAVAILABLE` message instead of a generic offline error.
 - **Context Window:** the last 5 events are sent to the model each turn.
 - **Output Escaping:** all user- and AI-supplied text rendered via `innerHTML` (handles, causes, event log) passes through `escapeHTML()`.
 
@@ -217,6 +219,6 @@ The `waitlist` table (email, handle, source, interest, status) needs an insert-o
 ---
 
 **SYSTEM_STATUS: OPERATIONAL**
-**MODEL_CORE: GEMINI_2.5_FLASH**
+**MODEL_CORE: GEMINI_3.6_FLASH**
 **PERSISTENCE: SUPABASE // ANONYMOUS_AUTH_ACTIVE**
 **LEADERBOARD: LIVE // UNVERIFIED**
